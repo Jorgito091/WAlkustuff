@@ -1,0 +1,1527 @@
+<!doctype html>
+
+<html lang="es">
+
+  <head>
+
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Calendario de Guardias</title>
+
+    <link
+
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+
+      rel="stylesheet"
+
+    />
+
+    <style>
+
+      body {
+
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+
+          Arial, sans-serif;
+
+        background-color: #ffffff;
+
+        color: #111;
+
+        margin: 0;
+
+        padding: 30px 20px;
+
+        box-sizing: border-box;
+
+        display: flex;
+
+        justify-content: center;
+
+        align-items: center;
+
+        min-height: 100vh;
+
+      }
+
+      .main-container {
+
+        width: 100%;
+
+        max-width: 100%;
+
+        display: flex;
+
+        gap: 25px;
+
+        box-sizing: border-box;
+
+        align-items: stretch;
+
+      }
+
+      /* Columna Izquierda: Calendario (75%) */
+
+      .calendar-column {
+
+        flex: 3;
+
+      }
+
+      /* Columna Derecha: Panel (25%) */
+
+      .sidebar-column {
+
+        flex: 1;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: space-between;
+
+        border-left: 1px solid #eaeaea;
+
+        padding-left: 25px;
+
+        padding-top: 5px;
+
+        padding-bottom: 5px;
+
+      }
+
+      .sidebar-top {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 15px;
+
+      }
+
+      #header-title {
+
+        color: #000;
+
+        font-size: 1.2rem;
+
+        font-weight: 700;
+
+        letter-spacing: -0.02em;
+
+      }
+
+      #header-subtitle {
+
+        color: #666;
+
+        font-size: 0.8rem;
+
+        font-weight: 500;
+
+        line-height: 1.4;
+
+      }
+
+      .selected-count {
+
+        color: #333;
+
+        font-size: 0.85rem;
+
+        font-weight: 600;
+
+      }
+
+      .legends-header-row {
+
+        font-size: 0.75rem;
+
+        font-weight: 700;
+
+        color: #888;
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.05em;
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: center;
+
+        margin-top: 10px;
+
+        border-top: 1px solid #f0f0f0;
+
+        padding-top: 12px;
+
+        padding-bottom: 2px;
+
+      }
+
+      .legends-container {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 8px;
+
+      }
+
+      .legend-item {
+
+        font-size: 0.85rem;
+
+        color: #444;
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: center;
+
+      }
+
+
+
+      #calendar {
+
+        background: #fff;
+
+        width: 100%;
+
+      }
+
+      .fc {
+
+        --fc-border-color: #eaeaea;
+
+        --fc-button-bg-color: transparent;
+
+        --fc-button-border-color: transparent;
+
+        --fc-button-text-color: #333;
+
+        --fc-today-bg-color: transparent;
+
+        font-size: 0.9rem;
+
+      }
+
+      .fc-toolbar-title {
+
+        font-size: 1.25rem !important;
+
+        font-weight: 700;
+
+        color: #000;
+
+        text-transform: capitalize;
+
+      }
+
+      .fc-col-header-cell-cushion {
+
+        font-weight: 600;
+
+        color: #666;
+
+        text-transform: uppercase;
+
+        font-size: 0.75rem;
+
+        letter-spacing: 0.05em;
+
+        padding-bottom: 12px !important;
+
+      }
+
+      /* Celdas amplias */
+
+      .fc-daygrid-day {
+
+        height: 140px !important;
+
+      }
+
+      .fc-daygrid-day-frame {
+
+        position: relative;
+
+        height: 100%;
+
+        display: flex;
+
+        flex-direction: column;
+
+      }
+
+      .fc-daygrid-day-top {
+
+        flex-direction: row !important;
+
+        justify-content: flex-end;
+
+        padding: 6px 8px;
+
+        z-index: 3;
+
+        pointer-events: none;
+
+      }
+
+      .fc-daygrid-day-number {
+
+        font-size: 0.85rem;
+
+        font-weight: 600;
+
+        color: #333;
+
+        background: rgba(255, 255, 255, 0.9);
+
+        padding: 2px 5px;
+
+        border-radius: 4px;
+
+      }
+
+
+
+      .fc-day-other .fc-daygrid-day-number {
+
+        opacity: 0.15;
+
+      }
+
+
+
+      /* Triángulos */
+
+      .split-day-container {
+
+        position: absolute;
+
+        top: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        display: flex;
+
+        z-index: 1;
+
+        overflow: hidden;
+
+        border-radius: 4px;
+
+      }
+
+
+
+      .half-triangle.day-shift {
+
+        position: absolute;
+
+        top: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+
+        background-color: transparent;
+
+        transition: background-color 0.2s ease;
+
+        cursor: pointer;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        padding: 8px;
+
+        gap: 3px;
+
+      }
+
+      .half-triangle.day-shift:hover {
+
+        background-color: rgba(0, 0, 0, 0.05);
+
+      }
+
+      .half-triangle.day-shift.has-active {
+
+        background-color: #f6dd91;
+
+      }
+
+      .half-triangle.day-shift.occupied-other {
+
+        background-color: #f1f5f9;
+
+      }
+
+      .half-triangle.day-shift.occupied-other:hover {
+
+        background-color: #e2e8f0;
+
+      }
+
+
+
+      .half-triangle.night-shift {
+
+        position: absolute;
+
+        top: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+
+        background-color: transparent;
+
+        transition: background-color 0.2s ease;
+
+        cursor: pointer;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: flex-end;
+
+        justify-content: flex-end;
+
+        padding: 8px;
+
+        gap: 3px;
+
+        text-align: right;
+
+      }
+
+      .half-triangle.night-shift:hover {
+
+        background-color: rgba(0, 0, 0, 0.05);
+
+      }
+
+      .half-triangle.night-shift.has-active {
+
+        background-color: #35405d;
+
+      }
+
+      .half-triangle.night-shift.occupied-other {
+
+        background-color: #f1f5f9;
+
+      }
+
+      .half-triangle.night-shift.occupied-other:hover {
+
+        background-color: #cbd5e1;
+
+      }
+
+
+
+      .shift-badge {
+
+        background: #e5e7eb !important;
+
+        color: #333333 !important;
+
+        font-size: 0.65rem;
+
+        font-weight: 700;
+
+        padding: 2px 6px;
+
+        border-radius: 4px;
+
+        letter-spacing: 0.03em;
+
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+
+      }
+
+
+
+      /* Botón central ampliado (2.5x) para Sábados y Domingos */
+
+      .weekend-center-btn {
+
+        position: absolute;
+
+        top: 50%;
+
+        left: 50%;
+
+        transform: translate(-50%, -50%);
+
+        z-index: 4;
+
+        width: 70px;
+
+        height: 70px;
+
+        background-color: transparent;
+
+        border: 2px solid #ffffff;
+
+        border-radius: 12px; /* Cuadrado con bordes redondeados */
+
+        cursor: pointer;
+
+        transition: background-color 0.2s ease, transform 0.15s ease;
+
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 2px;
+
+        padding: 4px;
+
+      }
+
+      .weekend-center-btn:hover {
+
+        transform: translate(-50%, -50%) scale(1.03);
+
+      }
+
+      .weekend-center-btn.has-active {
+
+        background-color: #800020; /* Color tinto cuando está seleccionado */
+
+      }
+
+      .weekend-center-btn.occupied-other {
+
+        background-color: #f1f5f9;
+
+        cursor: not-allowed;
+
+      }
+
+
+
+      /* Estilos del Botón, Spinner y Palomita */
+
+      .btn-submit {
+
+        background-color: #000;
+
+        color: #fff;
+
+        border: none;
+
+        width: 100%;
+
+        padding: 14px;
+
+        font-size: 0.9rem;
+
+        font-weight: 600;
+
+        cursor: pointer;
+
+        transition: background-color 0.2s ease;
+
+        display: flex;
+
+        justify-content: center;
+
+        align-items: center;
+
+        height: 48px;
+
+        transform: translateY(-15%);
+
+      }
+
+      .btn-submit:hover:not(:disabled) {
+
+        background-color: #222;
+
+      }
+
+      .btn-submit:disabled {
+
+        cursor: not-allowed;
+
+        opacity: 0.85;
+
+      }
+
+      /* Animación del Spinner (ruedita cargando) */
+
+      .spinner {
+
+        width: 20px;
+
+        height: 20px;
+
+        border: 3px solid rgba(255, 255, 255, 0.3);
+
+        border-radius: 50%;
+
+        border-top-color: #fff;
+
+        animation: spin 0.8s linear infinite;
+
+      }
+
+      @keyframes spin {
+
+        to {
+
+          transform: rotate(360deg);
+
+        }
+
+      }
+
+
+
+      /* Estilo para la palomita de éxito */
+
+      .success-checkmark {
+
+        display: inline-block;
+
+        font-size: 1.2rem;
+
+        color: #4ade80;
+
+        font-weight: bold;
+
+      }
+
+
+
+      /* Media Queries para responsividad del botón central */
+
+      @media (max-width: 768px) {
+
+        .weekend-center-btn {
+
+          width: 50px;
+
+          height: 50px;
+
+          border-radius: 8px;
+
+        }
+
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <div class="main-container">
+
+      <!-- Columna Izquierda: Calendario (75%) -->
+
+      <div class="calendar-column"><div id="calendar"></div></div>
+
+
+
+      <!-- Columna Derecha: Panel (25%) -->
+
+      <div class="sidebar-column">
+
+        <div class="sidebar-top">
+
+          <div id="header-title">Guardias de: {{1.user.first_name}} {{1.user.last_name}}</div>
+
+          <div id="header-subtitle">Cantidad de guardias sugeridas: {{1.user.cantidad_de_guardias}}</div>
+
+          <div id="selectedCount" class="selected-count">Guardias colocadas: 0</div>
+
+          <div class="legends-header-row">
+
+            <span>Nombre</span> <span>Iniciales</span>
+
+          </div>
+
+          <div class="legends-container" id="legendsContainer"></div>
+
+        </div>
+
+
+
+        <div class="sidebar-bottom">
+
+          <button id="submitBtn" class="btn-submit">
+
+            <span>Enviar Selección</span>
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- FullCalendar JS -->
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <script>
+
+      document.addEventListener("DOMContentLoaded", function () {
+
+        let rawDataString = `{{lpjgh.text.value}}`.trim();
+
+        let parsedProfiles = [];
+
+
+
+        try {
+
+          if (rawDataString) {
+
+            if (!rawDataString.startsWith("[")) {
+
+              rawDataString = "[" + rawDataString + "]";
+
+            }
+
+            parsedProfiles = JSON.parse(rawDataString);
+
+          }
+
+        } catch (e) {
+
+          try {
+
+            let fixedString = "[" + rawDataString.replace(/\}\s*\{/g, "},{") + "]";
+
+            parsedProfiles = JSON.parse(fixedString);
+
+          } catch (err2) {
+
+            console.error("Error al parsear el JSON múltiple:", err2);
+
+            parsedProfiles = [];
+
+          }
+
+        }
+
+
+
+        const getInitials = (name) => {
+
+          if (!name || name.trim() === "") return "US";
+
+          return name
+
+            .trim()
+
+            .split(" ")
+
+            .filter((word) => word.length > 0)
+
+            .map((word) => word[0].toUpperCase())
+
+            .join("");
+
+        };
+
+
+
+        const profiles = parsedProfiles
+
+          .filter((p) => p && p.nombre && p.nombre.trim() !== "")
+
+          .map((p) => ({
+
+            nombre: p.nombre.trim(),
+
+            iniciales: getInitials(p.nombre),
+
+            gd: p.gd ? p.gd.toString().split(",").map((d) => d.trim()).filter(Boolean) : [],
+
+            gt: p.gt ? p.gt.toString().split(",").map((d) => d.trim()).filter(Boolean) : [],
+
+            smgd: p.smgd ? p.smgd.toString().split(",").map((d) => d.trim()).filter(Boolean) : [],
+
+            smgn: p.smgn ? p.smgn.toString().split(",").map((d) => d.trim()).filter(Boolean) : [],
+
+            git: (p.GIT ?? p.git) ? (p.GIT ?? p.git).toString().split(",").map((d) => d.trim()).filter(Boolean) : [],
+
+            gits: (p.GITS ?? p.gits) ? (p.GITS ?? p.gits).toString().split(",").map((d) => d.trim()).filter(Boolean) : [],
+
+          }));
+
+
+
+        const currentUserFullName = "{{1.user.first_name}} {{1.user.last_name}}".trim().toLowerCase();
+
+
+
+        const legendsContainer = document.getElementById("legendsContainer");
+
+        const selectedCount = document.getElementById("selectedCount");
+
+
+
+        const activeCurrentDays = new Set();
+
+        const activeCurrentNights = new Set();
+
+        const activeNextDays = new Set();
+
+        const activeNextNights = new Set();
+
+        const activeCurrentGitDays = new Set();
+
+        const activeNextGitDays = new Set();
+
+
+
+        const updateSelectedCount = () => {
+
+          const totalSelected = activeCurrentDays.size + activeCurrentNights.size + activeNextDays.size + activeNextNights.size + activeCurrentGitDays.size + activeNextGitDays.size;
+
+          selectedCount.textContent = `Guardias colocadas: ${totalSelected}`;
+
+        };
+
+
+
+        if (profiles.length === 0) {
+
+          legendsContainer.innerHTML = '<div style="font-size:0.8rem; color:#888;">No hay otros usuarios registrados.</div>';
+
+        } else {
+
+          profiles.forEach((prof) => {
+
+            const item = document.createElement("div");
+
+            item.className = "legend-item";
+
+            item.innerHTML = `
+
+              <span>${prof.nombre}</span>
+
+              <span style="font-weight:700; color:#111;">${prof.iniciales}</span>
+
+            `;
+
+            legendsContainer.appendChild(item);
+
+          });
+
+        }
+
+
+
+        const calendarEl = document.getElementById("calendar");
+
+        const now = new Date();
+
+        const currentMonthIndex = now.getMonth();
+
+        const currentYear = now.getFullYear();
+
+
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+
+          initialView: "dayGridMonth",
+
+          locale: "es",
+
+          headerToolbar: { 
+
+            left: "title", 
+
+            center: "", 
+
+            right: "prev,next" 
+
+          },
+
+          fixedWeekCount: false,
+
+          height: "auto",
+
+          datesSet: function (info) {
+
+            updateSelectedCount();
+
+            
+
+            const currentDate = calendar.getDate();
+
+            const cMonth = currentDate.getMonth();
+
+            const cYear = currentDate.getFullYear();
+
+            
+
+            const prevButton = calendarEl.querySelector(".fc-prev-button");
+
+            const nextButton = calendarEl.querySelector(".fc-next-button");
+
+            
+
+            if (prevButton) {
+
+              if (cMonth === currentMonthIndex && cYear === currentYear) {
+
+                prevButton.style.display = "none";
+
+              } else {
+
+                prevButton.style.display = "inline-block";
+
+              }
+
+            }
+
+
+
+            let targetNextMonth = currentMonthIndex + 1;
+
+            let targetNextYear = currentYear;
+
+            if (targetNextMonth > 11) {
+
+              targetNextMonth = 0;
+
+              targetNextYear += 1;
+
+            }
+
+
+
+            if (nextButton) {
+
+              if (cMonth === targetNextMonth && cYear === targetNextYear) {
+
+                nextButton.style.display = "none";
+
+              } else {
+
+                nextButton.style.display = "inline-block";
+
+              }
+
+            }
+
+          },
+
+          dayCellDidMount: function (info) {
+
+            const frame = info.el.querySelector(".fc-daygrid-day-frame");
+
+            if (frame) {
+
+              const currentCalendarDate = calendar.getDate();
+
+              const cellDate = info.date;
+
+
+
+              const cMonth = currentCalendarDate.getMonth();
+
+              const cYear = currentCalendarDate.getFullYear();
+
+              const cellMonth = cellDate.getMonth();
+
+              const cellYear = cellDate.getFullYear();
+
+              const dayNumInt = cellDate.getDate();
+
+              const dayOfWeek = cellDate.getDay();
+
+
+
+              const isCurrentMonth = (cellMonth === currentMonthIndex && cellYear === currentYear);
+
+              
+
+              let targetNextMonth = currentMonthIndex + 1;
+
+              let targetNextYear = currentYear;
+
+              if (targetNextMonth > 11) {
+
+                targetNextMonth = 0;
+
+                targetNextYear += 1;
+
+              }
+
+              const isNextMonth = (cellMonth === targetNextMonth && cellYear === targetNextYear);
+
+
+
+              if (isNextMonth) {
+
+                if (dayNumInt > 5) {
+
+                  return; 
+
+                }
+
+              } else if (!isCurrentMonth) {
+
+                return;
+
+              }
+
+
+
+              const container = document.createElement("div");
+
+              container.className = "split-day-container";
+
+              
+
+              const dayNumber = dayNumInt.toString();
+
+              
+
+              if (isNextMonth) {
+
+                info.el.setAttribute("data-next-day", dayNumber);
+
+              } else {
+
+                info.el.setAttribute("data-day", dayNumber);
+
+              }
+
+
+
+              const dayPart = document.createElement("div");
+
+              dayPart.className = "half-triangle day-shift";
+
+              dayPart.dataset.dayNum = dayNumber;
+
+
+
+              const nightPart = document.createElement("div");
+
+              nightPart.className = "half-triangle night-shift";
+
+              nightPart.dataset.dayNum = dayNumber;
+
+
+
+              let hasCurrentDayActive = false;
+
+              let hasCurrentNightActive = false;
+
+              let hasOtherDayActive = false;
+
+              let hasOtherNightActive = false;
+
+
+
+              if (isCurrentMonth && activeCurrentDays.has(dayNumber)) hasCurrentDayActive = true;
+
+              if (isCurrentMonth && activeCurrentNights.has(dayNumber)) hasCurrentNightActive = true;
+
+              if (isNextMonth && activeNextDays.has(dayNumber)) hasCurrentDayActive = true;
+
+              if (isNextMonth && activeNextNights.has(dayNumber)) hasCurrentNightActive = true;
+
+
+
+              profiles.forEach((prof) => {
+
+                const isThisUser = prof.nombre.toLowerCase() === currentUserFullName;
+
+
+
+                if (isCurrentMonth) {
+
+                  if (prof.gd.includes(dayNumber)) {
+
+                    const badge = document.createElement("span");
+
+                    badge.className = "shift-badge";
+
+                    badge.textContent = prof.iniciales;
+
+                    dayPart.appendChild(badge);
+
+
+
+                    if (isThisUser) {
+
+                      hasCurrentDayActive = true;
+
+                      activeCurrentDays.add(dayNumber);
+
+                    } else {
+
+                      hasOtherDayActive = true;
+
+                    }
+
+                  }
+
+
+
+                  if (prof.gt.includes(dayNumber)) {
+
+                    const badge = document.createElement("span");
+
+                    badge.className = "shift-badge";
+
+                    badge.textContent = prof.iniciales;
+
+                    nightPart.appendChild(badge);
+
+
+
+                    if (isThisUser) {
+
+                      hasCurrentNightActive = true;
+
+                      activeCurrentNights.add(dayNumber);
+
+                    } else {
+
+                      hasOtherNightActive = true;
+
+                    }
+
+                  }
+
+                } else if (isNextMonth) {
+
+                  if (prof.smgd.includes(dayNumber)) {
+
+                    const badge = document.createElement("span");
+
+                    badge.className = "shift-badge";
+
+                    badge.textContent = prof.iniciales;
+
+                    dayPart.appendChild(badge);
+
+
+
+                    if (isThisUser) {
+
+                      hasCurrentDayActive = true;
+
+                      activeNextDays.add(dayNumber);
+
+                    } else {
+
+                      hasOtherDayActive = true;
+
+                    }
+
+                  }
+
+
+
+                  if (prof.smgn.includes(dayNumber)) {
+
+                    const badge = document.createElement("span");
+
+                    badge.className = "shift-badge";
+
+                    badge.textContent = prof.iniciales;
+
+                    nightPart.appendChild(badge);
+
+
+
+                    if (isThisUser) {
+
+                      hasCurrentNightActive = true;
+
+                      activeNextNights.add(dayNumber);
+
+                    } else {
+
+                      hasOtherNightActive = true;
+
+                    }
+
+                  }
+
+                }
+
+              });
+
+
+
+              if (hasCurrentDayActive) {
+
+                dayPart.classList.add("has-active");
+
+              } else if (hasOtherDayActive) {
+
+                dayPart.classList.add("occupied-other");
+
+              }
+
+
+
+              if (hasCurrentNightActive) {
+
+                nightPart.classList.add("has-active");
+
+              } else if (hasOtherNightActive) {
+
+                nightPart.classList.add("occupied-other");
+
+              }
+
+
+
+              dayPart.addEventListener("click", (e) => {
+
+                e.stopPropagation();
+
+                if (dayPart.classList.contains("occupied-other")) return;
+
+                dayPart.classList.toggle("has-active");
+
+                
+
+                const isActive = dayPart.classList.contains("has-active");
+
+                if (isNextMonth) {
+
+                  if (isActive) activeNextDays.add(dayNumber);
+
+                  else activeNextDays.delete(dayNumber);
+
+                } else {
+
+                  if (isActive) activeCurrentDays.add(dayNumber);
+
+                  else activeCurrentDays.delete(dayNumber);
+
+                }
+
+                updateSelectedCount();
+
+              });
+
+
+
+              nightPart.addEventListener("click", (e) => {
+
+                e.stopPropagation();
+
+                if (nightPart.classList.contains("occupied-other")) return;
+
+                nightPart.classList.toggle("has-active");
+
+                
+
+                const isActive = nightPart.classList.contains("has-active");
+
+                if (isNextMonth) {
+
+                  if (isActive) activeNextNights.add(dayNumber);
+
+                  else activeNextNights.delete(dayNumber);
+
+                } else {
+
+                  if (isActive) activeCurrentNights.add(dayNumber);
+
+                  else activeCurrentNights.delete(dayNumber);
+
+                }
+
+                updateSelectedCount();
+
+              });
+
+
+
+              container.appendChild(dayPart);
+
+              container.appendChild(nightPart);
+
+
+
+              // Botón central para Sábados (6) y Domingos (0)
+
+              if (dayOfWeek === 0 || dayOfWeek === 6) {
+
+                const centerBtn = document.createElement("button");
+
+                centerBtn.className = "weekend-center-btn";
+
+                centerBtn.dataset.dayNum = dayNumber;
+
+
+
+                let hasCurrentGitActive = false;
+
+                let hasOtherGitActive = false;
+
+
+
+                if (isCurrentMonth && activeCurrentGitDays.has(dayNumber)) {
+
+                  hasCurrentGitActive = true;
+
+                }
+
+                if (isNextMonth && activeNextGitDays.has(dayNumber)) {
+
+                  hasCurrentGitActive = true;
+
+                }
+
+
+
+                profiles.forEach((prof) => {
+
+                  const isThisUser = prof.nombre.toLowerCase() === currentUserFullName;
+
+                  if ((isCurrentMonth && prof.git.includes(dayNumber)) || (isNextMonth && prof.gits.includes(dayNumber))) {
+
+                    const badge = document.createElement("span");
+
+                    badge.className = "shift-badge";
+
+                    badge.textContent = prof.iniciales;
+
+                    centerBtn.appendChild(badge);
+
+
+
+                    if (isThisUser) {
+
+                      hasCurrentGitActive = true;
+
+                      if (isNextMonth) {
+
+                        activeNextGitDays.add(dayNumber);
+
+                      } else {
+
+                        activeCurrentGitDays.add(dayNumber);
+
+                      }
+
+                    } else {
+
+                      hasOtherGitActive = true;
+
+                    }
+
+                  }
+
+                });
+
+
+
+                if (hasCurrentGitActive) {
+
+                  centerBtn.classList.add("has-active");
+
+                } else if (hasOtherGitActive) {
+
+                  centerBtn.classList.add("occupied-other");
+
+                }
+
+
+
+                centerBtn.addEventListener("click", (e) => {
+
+                  e.stopPropagation();
+
+                  if (centerBtn.classList.contains("occupied-other")) return;
+
+                  centerBtn.classList.toggle("has-active");
+
+
+
+                  const selectedGitDays = isNextMonth ? activeNextGitDays : activeCurrentGitDays;
+
+                  if (centerBtn.classList.contains("has-active")) {
+
+                    selectedGitDays.add(dayNumber);
+
+                  } else {
+
+                    selectedGitDays.delete(dayNumber);
+
+                  }
+
+                  updateSelectedCount();
+
+                });
+
+
+
+                container.appendChild(centerBtn);
+
+              }
+
+
+
+              frame.insertBefore(container, frame.firstChild);
+
+            }
+
+          },
+
+        });
+
+
+
+        calendar.render();
+
+        updateSelectedCount();
+
+
+
+        document.getElementById("submitBtn").addEventListener("click", async function () {
+
+          const btn = this;
+
+          const btnContent = btn.querySelector("span");
+
+
+
+          btn.disabled = true;
+
+          btnContent.innerHTML = '<div class="spinner"></div>';
+
+
+
+          const payload = {
+
+            id: "{{1.user._id}}",
+
+            GD: Array.from(activeCurrentDays).sort((a,b) => Number(a)-Number(b)).join(","),
+
+            GN: Array.from(activeCurrentNights).sort((a,b) => Number(a)-Number(b)).join(","),
+
+            SMGD: Array.from(activeNextDays).sort((a,b) => Number(a)-Number(b)).join(","),
+
+            SMGN: Array.from(activeNextNights).sort((a,b) => Number(a)-Number(b)).join(","),
+
+            GIT: Array.from(activeCurrentGitDays)
+
+              .sort((a,b) => Number(a)-Number(b)).join(","),
+
+            GITS: Array.from(activeNextGitDays)
+
+              .sort((a,b) => Number(a)-Number(b)).join(",")
+
+          };
+
+
+
+          const endpointUrl = "https://portal.crm.walcu.com/endpoints/famous-rising-victory/endp-calendarioguardias-prueba";
+
+
+
+          try {
+
+            const response = await fetch(endpointUrl, {
+
+              method: "POST",
+
+              headers: { "Content-Type": "application/json" },
+
+              body: JSON.stringify(payload),
+
+            });
+
+
+
+            if (response.ok) {
+
+              btnContent.innerHTML = '<span class="success-checkmark">✓ ¡Enviado!</span>';
+
+              setTimeout(() => {
+
+                btnContent.textContent = "Enviar Selección";
+
+                btn.disabled = false;
+
+              }, 2500);
+
+            } else {
+
+              alert("Hubo un error al enviar las guardias. Código: " + response.status);
+
+              btnContent.textContent = "Enviar Selección";
+
+              btn.disabled = false;
+
+            }
+
+          } catch (error) {
+
+            console.error("Error en la petición POST:", error);
+
+            alert("Error de red al intentar enviar los datos.");
+
+            btnContent.textContent = "Enviar Selección";
+
+            btn.disabled = false;
+
+          }
+
+        });
+
+      });
+
+    </script>
+
+  </body>
+
+</html>
