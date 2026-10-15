@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Calendario de Guardias</title>
+
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
+
+    <style>
+
+        body {
+
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+            background-color: #ffffff;
+
+            color: #111;
+
+            margin: 0;
+
+            padding: 40px;
+
+            box-sizing: border-box;
+
+        }
+
+        .papujefe-container {
+
+            width: 100%;
+
+            max-width: 1400px;
+
+            margin: 0 auto;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 30px;
+
+        }
+
+        .header-section {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-end;
+
+            border-bottom: 1px solid #eaeaea;
+
+            padding-bottom: 20px;
+
+        }
+
+        #header-title {
+
+            color: #000;
+
+            font-size: 1.8rem;
+
+            font-weight: 700;
+
+            letter-spacing: -0.02em;
+
+        }
+
+        #calendar {
+
+            background: #fff;
+
+            width: 100%;
+
+        }
+
+        .fc {
+
+            --fc-border-color: #eaeaea;
+
+            --fc-button-bg-color: transparent;
+
+            --fc-button-border-color: transparent;
+
+            --fc-button-text-color: #333;
+
+            --fc-today-bg-color: transparent;
+
+            font-size: 0.9rem;
+
+        }
+
+        .fc-toolbar-title {
+
+            font-size: 1.5rem !important;
+
+            font-weight: 700;
+
+            color: #000;
+
+            text-transform: capitalize;
+
+        }
+
+        .fc-col-header-cell-cushion {
+
+            font-weight: 600;
+
+            color: #666;
+
+            text-transform: uppercase;
+
+            font-size: 0.75rem;
+
+            letter-spacing: 0.05em;
+
+            padding-bottom: 15px !important;
+
+        }
+
+        .fc-daygrid-day {
+
+            height: 195px !important;
+
+        }
+
+        .fc-daygrid-day-frame {
+
+            position: relative;
+
+            height: 100%;
+
+            display: flex;
+
+            flex-direction: column;
+
+        }
+
+        .fc-daygrid-day-top {
+
+            flex-direction: row !important;
+
+            justify-content: flex-end;
+
+            padding: 8px 10px;
+
+            z-index: 3;
+
+            pointer-events: none;
+
+        }
+
+        .fc-daygrid-day-number {
+
+            font-size: 0.85rem;
+
+            font-weight: 600;
+
+            color: #333;
+
+            background: rgba(255, 255, 255, 0.9);
+
+            padding: 2px 6px;
+
+            border-radius: 4px;
+
+        }
+
+        .fc-day-other .fc-daygrid-day-number {
+
+            opacity: 0.15;
+
+        }
+
+        .split-day-container {
+
+            position: absolute;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            display: flex;
+
+            z-index: 1;
+
+            overflow: hidden;
+
+            border-radius: 4px;
+
+        }
+
+        .half-triangle.day-shift {
+
+            position: absolute;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            clip-path: polygon(0 0, 100% 0, 0 100%);
+
+            background-color: #ffffff;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+            padding: 8px;
+
+            gap: 3px;
+
+        }
+
+        .half-triangle.night-shift {
+
+            position: absolute;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            clip-path: polygon(100% 0, 100% 100%, 0 100%);
+
+            background-color: #f3f4f6;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: flex-end;
+
+            justify-content: flex-end;
+
+            padding: 8px;
+
+            gap: 3px;
+
+            text-align: right;
+
+        }
+
+        .shift-badge-day {
+
+            background: #F6DD91;
+
+            color: #111111;
+
+            font-size: 0.52rem;
+
+            font-weight: 700;
+
+            padding: 2px 5px;
+
+            border-radius: 4px;
+
+            letter-spacing: 0.03em;
+
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+
+        }
+
+        .shift-badge-night {
+
+            background: #35405D;
+
+            color: #ffffff;
+
+            font-size: 0.52rem;
+
+            font-weight: 700;
+
+            padding: 2px 5px;
+
+            border-radius: 4px;
+
+            letter-spacing: 0.03em;
+
+            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+
+        }
+
+        .shift-badge-git {
+
+            background: #800020;
+
+            color: #ffffff;
+
+            font-size: 0.52rem;
+
+            font-weight: 700;
+
+            padding: 2px 5px;
+
+            border-radius: 4px;
+
+            letter-spacing: 0.03em;
+
+            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+
+        }
+
+        .weekend-center-btn {
+
+            position: absolute;
+
+            top: 50%;
+
+            left: 50%;
+
+            transform: translate(-50%, -50%);
+
+            z-index: 4;
+
+            width: 65px;
+
+            height: 65px;
+
+            background-color: rgba(255, 255, 255, 0.9);
+
+            border: 2px solid #eaeaea;
+
+            border-radius: 10px;
+
+            pointer-events: none;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            gap: 2px;
+
+            padding: 4px;
+
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        }
+
+        .legends-wrapper {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 8px;
+
+            background: #fafafa;
+
+            border: 1px solid #eaeaea;
+
+            padding: 15px 20px;
+
+            border-radius: 12px;
+
+            margin-top: 10px;
+
+        }
+
+        .legends-header-row {
+
+            font-size: 0.75rem;
+
+            font-weight: 700;
+
+            color: #888;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.05em;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            border-bottom: 1px solid #eaeaea;
+
+            padding-bottom: 6px;
+
+        }
+
+        .legends-container {
+
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 20px;
+
+        }
+
+        .legend-item {
+
+            font-size: 0.85rem;
+
+            color: #333;
+
+            display: flex;
+
+            gap: 10px;
+
+            align-items: center;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="papujefe-container">
+
+        <div class="header-section">
+
+            <div id="header-title">Vista General de Guardias</div>
+
+        </div>
+
+
+
+        <div id="calendar"></div>
+
+
+
+        <div class="legends-wrapper">
+
+            <div class="legends-header-row">
+
+                <span>Personal y Nombres Cortos</span>
+
+            </div>
+
+            <div class="legends-container" id="legendsContainer"></div>
+
+        </div>
+
+    </div>
+
+
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            let rawDataString = `{{lpjgh.text.value}}`.trim();
+
+            let parsedProfiles = [];
+
+
+
+            try {
+
+                if (rawDataString) {
+
+                    if (!rawDataString.startsWith('[')) {
+
+                        rawDataString = '[' + rawDataString + ']';
+
+                    }
+
+                    parsedProfiles = JSON.parse(rawDataString);
+
+                }
+
+            } catch (e) {
+
+                console.error("Error al parsear el JSON múltiple:", e);
+
+                parsedProfiles = [];
+
+            }
+
+
+
+            const profiles = parsedProfiles.map(p => {
+
+                const fullName = p.nombre ? p.nombre.trim() : "Usuario";
+
+                const parts = fullName.split(' ').filter(Boolean);
+
+                const shortFormat = parts.length >= 2 ? `${parts[0]} ${parts[1][0].toUpperCase()}.` : fullName;
+
+
+
+                return {
+
+                    nombreCompleto: fullName,
+
+                    shortName: shortFormat,
+
+                    gd: p.gd ? p.gd.toString().split(',').map(d => d.trim()).filter(Boolean) : [],
+
+                    gt: p.gt ? p.gt.toString().split(',').map(d => d.trim()).filter(Boolean) : [],
+
+                    smgd: p.smgd ? p.smgd.toString().split(',').map(d => d.trim()).filter(Boolean) : [],
+
+                    smgn: p.smgn ? p.smgn.toString().split(',').map(d => d.trim()).filter(Boolean) : [],
+
+                    git: (p.GIT ?? p.git) ? (p.GIT ?? p.git).toString().split(',').map(d => d.trim()).filter(Boolean) : [],
+
+                    gits: (p.GITS ?? p.gits) ? (p.GITS ?? p.gits).toString().split(',').map(d => d.trim()).filter(Boolean) : []
+
+                };
+
+            });
+
+
+
+            const legendsContainer = document.getElementById('legendsContainer');
+
+            profiles.forEach(prof => {
+
+                const item = document.createElement('div');
+
+                item.className = 'legend-item';
+
+                item.innerHTML = `
+
+                    <span><strong>${prof.nombreCompleto}</strong></span>
+
+                    <span style="color:#666; font-size:0.8rem;">(${prof.shortName})</span>
+
+                `;
+
+                legendsContainer.appendChild(item);
+
+            });
+
+
+
+            const calendarEl = document.getElementById('calendar');
+
+            const now = new Date();
+
+            const currentMonthIndex = now.getMonth();
+
+            const currentYear = now.getFullYear();
+
+
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+
+                initialView: 'dayGridMonth',
+
+                locale: 'es',
+
+                headerToolbar: {
+
+                    left: 'title',
+
+                    center: '',
+
+                    right: 'prev,next'
+
+                },
+
+                fixedWeekCount: false,
+
+                height: 'auto',
+
+                datesSet: function (info) {
+
+                    const currentDate = calendar.getDate();
+
+                    const cMonth = currentDate.getMonth();
+
+                    const cYear = currentDate.getFullYear();
+
+                    
+
+                    const prevButton = calendarEl.querySelector(".fc-prev-button");
+
+                    const nextButton = calendarEl.querySelector(".fc-next-button");
+
+                    
+
+                    if (prevButton) {
+
+                        if (cMonth === currentMonthIndex && cYear === currentYear) {
+
+                            prevButton.style.display = "none";
+
+                        } else {
+
+                            prevButton.style.display = "inline-block";
+
+                        }
+
+                    }
+
+
+
+                    let targetNextMonth = currentMonthIndex + 1;
+
+                    let targetNextYear = currentYear;
+
+                    if (targetNextMonth > 11) {
+
+                        targetNextMonth = 0;
+
+                        targetNextYear += 1;
+
+                    }
+
+
+
+                    if (nextButton) {
+
+                        if (cMonth === targetNextMonth && cYear === targetNextYear) {
+
+                            nextButton.style.display = "none";
+
+                        } else {
+
+                            nextButton.style.display = "inline-block";
+
+                        }
+
+                    }
+
+                },
+
+                dayCellDidMount: function(info) {
+
+                    const frame = info.el.querySelector('.fc-daygrid-day-frame');
+
+                    if (frame) {
+
+                        const currentCalendarDate = calendar.getDate();
+
+                        const cellDate = info.date;
+
+
+
+                        const cMonth = currentCalendarDate.getMonth();
+
+                        const cYear = currentCalendarDate.getFullYear();
+
+                        const cellMonth = cellDate.getMonth();
+
+                        const cellYear = cellDate.getFullYear();
+
+                        const dayNumInt = cellDate.getDate();
+
+                        const dayOfWeek = cellDate.getDay();
+
+
+
+                        const isCurrentMonth = (cellMonth === currentMonthIndex && cellYear === currentYear);
+
+                        
+
+                        let targetNextMonth = currentMonthIndex + 1;
+
+                        let targetNextYear = currentYear;
+
+                        if (targetNextMonth > 11) {
+
+                            targetNextMonth = 0;
+
+                            targetNextYear += 1;
+
+                        }
+
+                        const isNextMonth = (cellMonth === targetNextMonth && cellYear === targetNextYear);
+
+
+
+                        if (isNextMonth) {
+
+                            if (dayNumInt > 5) return; 
+
+                        } else if (!isCurrentMonth) {
+
+                            return;
+
+                        }
+
+
+
+                        const container = document.createElement('div');
+
+                        container.className = 'split-day-container';
+
+                        
+
+                        const dayNumber = dayNumInt.toString();
+
+                        
+
+                        if (isNextMonth) {
+
+                            info.el.setAttribute("data-next-day", dayNumber);
+
+                        } else {
+
+                            info.el.setAttribute("data-day", dayNumber);
+
+                        }
+
+
+
+                        const dayPart = document.createElement('div');
+
+                        dayPart.className = 'half-triangle day-shift';
+
+
+
+                        const nightPart = document.createElement('div');
+
+                        nightPart.className = 'half-triangle night-shift';
+
+
+
+                        profiles.forEach(prof => {
+
+                            if (isCurrentMonth) {
+
+                                if (prof.gd.includes(dayNumber)) {
+
+                                    const badge = document.createElement('span');
+
+                                    badge.className = 'shift-badge-day';
+
+                                    badge.textContent = prof.shortName;
+
+                                    dayPart.appendChild(badge);
+
+                                }
+
+                                if (prof.gt.includes(dayNumber)) {
+
+                                    const badge = document.createElement('span');
+
+                                    badge.className = 'shift-badge-night';
+
+                                    badge.textContent = prof.shortName;
+
+                                    nightPart.appendChild(badge);
+
+                                }
+
+                            } else if (isNextMonth) {
+
+                                if (prof.smgd.includes(dayNumber)) {
+
+                                    const badge = document.createElement('span');
+
+                                    badge.className = 'shift-badge-day';
+
+                                    badge.textContent = prof.shortName;
+
+                                    dayPart.appendChild(badge);
+
+                                }
+
+                                if (prof.smgn.includes(dayNumber)) {
+
+                                    const badge = document.createElement('span');
+
+                                    badge.className = 'shift-badge-night';
+
+                                    badge.textContent = prof.shortName;
+
+                                    nightPart.appendChild(badge);
+
+                                }
+
+                            }
+
+                        });
+
+
+
+                        container.appendChild(dayPart);
+
+                        container.appendChild(nightPart);
+
+
+
+                        // Botón central para Guardias Intermedias en Sábados (6) y Domingos (0)
+
+                        if (dayOfWeek === 0 || dayOfWeek === 6) {
+
+                            const centerBtn = document.createElement('div');
+
+                            centerBtn.className = 'weekend-center-btn';
+
+
+
+                            profiles.forEach(prof => {
+
+                                if ((isCurrentMonth && prof.git.includes(dayNumber)) || (isNextMonth && prof.gits.includes(dayNumber))) {
+
+                                    const badge = document.createElement('span');
+
+                                    badge.className = 'shift-badge-git';
+
+                                    badge.textContent = prof.shortName;
+
+                                    centerBtn.appendChild(badge);
+
+                                }
+
+                            });
+
+
+
+                            if (centerBtn.children.length > 0) {
+
+                                container.appendChild(centerBtn);
+
+                            }
+
+                        }
+
+
+
+                        frame.insertBefore(container, frame.firstChild);
+
+                    }
+
+                }
+
+            });
+
+
+
+            calendar.render();
+
+        });
+
+    </script>
+
+</body>
+
+</html>
