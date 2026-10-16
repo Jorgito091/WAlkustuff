@@ -1,0 +1,1193 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla,es-noshorthands]{babel}
+\usepackage{lmodern}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{amsmath,amssymb}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing,shapes.geometric,arrows.meta,positioning,fit,calc,backgrounds}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{azul}{HTML}{1F4E79}
+\definecolor{azulclaro}{HTML}{DCE9F5}
+\definecolor{grisfondo}{HTML}{F4F4F4}
+\definecolor{verdecod}{HTML}{2E7D32}
+\definecolor{verdeclaro}{HTML}{E3F2E4}
+\definecolor{moradocod}{HTML}{6A1B9A}
+\definecolor{naranja}{HTML}{E65100}
+\definecolor{naranjaclaro}{HTML}{FFE9D6}
+\definecolor{rojoclaro}{HTML}{FBE3E3}
+\definecolor{amarilloturno}{HTML}{F6DD91}
+\definecolor{nocturno}{HTML}{35405D}
+\definecolor{tinto}{HTML}{800020}
+\definecolor{ocupado}{HTML}{F1F5F9}
+
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{azul}}{\thesubsection}{0.6em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Manual del Automatismo de Asignación de Guardias}
+\fancyhead[R]{\small Walcu CRM}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\lstdefinestyle{codigo}{
+  backgroundcolor=\color{grisfondo},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{azul!40},
+  keywordstyle=\color{moradocod}\bfseries,
+  commentstyle=\color{verdecod}\itshape,
+  stringstyle=\color{naranja},
+  showstringspaces=false,
+  columns=fullflexible,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1 {Á}{{\'A}}1 {É}{{\'E}}1 {Ó}{{\'O}}1 {ü}{{\"u}}1 {¿}{{?`}}1
+}
+\lstdefinelanguage{JS}{
+  keywords={const,let,var,if,else,for,of,function,return,throw,new,try,catch,typeof,forEach,map},
+  morecomment=[l]{//},
+  morestring=[b]",
+  morestring=[b]',
+  morestring=[b]`
+}
+\lstdefinelanguage{json}{
+  morestring=[b]"
+}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\nota}[1]{\par\medskip\noindent\fcolorbox{azul}{azulclaro}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{Nota:} #1}}\par\medskip}
+\newcommand{\aviso}[1]{\par\medskip\noindent\fcolorbox{red!60!black}{rojoclaro}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{Importante:} #1}}\par\medskip}
+
+% Estilos de TikZ
+\tikzset{
+  caja/.style={rectangle,rounded corners=3pt,draw=azul,fill=azulclaro,thick,align=center,minimum height=0.9cm,inner sep=4pt,font=\footnotesize},
+  entrada/.style={caja,fill=verdeclaro,draw=verdecod},
+  proceso/.style={caja},
+  salida/.style={caja,fill=naranjaclaro,draw=naranja},
+  decision/.style={diamond,aspect=2.4,draw=azul,fill=white,thick,align=center,inner sep=1pt,font=\scriptsize},
+  errorc/.style={caja,fill=rojoclaro,draw=red!60!black},
+  flecha/.style={-{Stealth[length=2.6mm]},thick,color=azul!80!black},
+  etiq/.style={font=\scriptsize,color=azul!70!black}
+}
+
+\title{\color{azul}\textbf{Manual de Funcionamiento y Uso}\\[0.4em]
+\large Automatismo de Cálculo y Asignación de Guardias por Asesor\\[0.2em]
+\normalsize Aplicable a cualquier centro configurado en Walcu CRM}
+\author{Documentación técnica y operativa}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+\tableofcontents
+\newpage
+
+%------------------------------------------------------------
+\section{Introducción}
+%------------------------------------------------------------
+
+\subsection{Propósito}
+Este manual describe el funcionamiento y el uso del automatismo que \textbf{distribuye un total de guardias entre los asesores del centro} en función de su desempeño reciente. El desempeño se mide con el \textbf{porcentaje de cierre}: de los leads (visitas) que atendió el asesor, cuántos terminaron en venta facturada. Los asesores con mejor cierre reciben más guardias; los asesores de reciente ingreso reciben un mínimo garantizado para poder competir en igualdad de condiciones.
+
+\subsection{Cómo se divide el trabajo}
+El proceso completo está formado por cinco partes, y es importante distinguir qué hace cada una:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Dos búsquedas del CRM} (objetos de búsqueda de Walcu) que obtienen los leads del centro y los asesores nuevos.
+  \item \textbf{Un modelo de inteligencia artificial} que, con un conjunto de reglas, define el total de guardias a repartir (\code{totalg}).
+  \item \textbf{Un script de cálculo} (función \code{procesarDatos}) que reparte ese total y construye el \emph{payload}.
+  \item \textbf{Un endpoint de Walcu} que recibe el \emph{payload} por \code{POST}, identifica a cada usuario y actualiza sus campos en el CRM.
+  \item \textbf{Tres automatismos de historial} dentro del CRM, que, cuando cambia el valor de visitas, ventas o porcentaje, guardan el valor anterior en el historial trimestral correspondiente (un año de antigüedad).
+\end{enumerate}
+
+\subsection{Segundo módulo: calendario de guardias}
+Además del cálculo y reparto de guardias, el manual documenta un segundo módulo independiente: el \textbf{calendario de guardias} (sección \ref{sec:calendario}). Mientras el primer módulo calcula el reparto de guardias, el calendario es la herramienta con la que el asesor \emph{elige en qué días y turnos} las coloca, tomando como guía la cantidad de guardias sugeridas, y con la que los gerentes y coordinadores las consultan.
+
+\subsection{Aplicación a cualquier centro}
+El automatismo \textbf{no está limitado a un centro}. El código del script no contiene ningún nombre de centro: todo lo que es específico de un centro (el centro mismo, la fuente de leads, el rol de los asesores, el rango de antigüedad, las reglas de la IA y el total de respaldo) vive en la \textbf{configuración de las búsquedas, del modelo de IA y del endpoint}. En este documento se usa como ejemplo de implementación el centro \emph{byd mexicali}, pero para usarlo en otro centro basta con ajustar esa configuración (ver la sección \ref{sec:parametros}).
+
+\subsection{Alcance del documento}
+Se cubre la configuración de las búsquedas, las variables de entrada, el funcionamiento interno del código línea por línea, el formato del \emph{payload}, el comportamiento del endpoint, el funcionamiento de los historiales trimestrales, el calendario de guardias (sección \ref{sec:calendario}), un ejemplo numérico y la guía de operación y solución de problemas.
+
+%------------------------------------------------------------
+\section{Arquitectura general}
+%------------------------------------------------------------
+
+\subsection{Diagrama de flujo general}
+
+\begin{figure}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.9cm and 1.3cm]
+  \node[entrada] (b1) {Búsqueda 1\\Leads del centro\\(colección \emph{Lead})};
+  \node[entrada,below=of b1] (b2) {Búsqueda 2\\Asesores nuevos\\(colección \emph{Usuario})};
+  \node[entrada,below=of b2] (ia) {Modelo de IA\\Reglas del centro\\$\rightarrow$ \code{totalg}};
+  \node[proceso,right=2cm of b2,minimum height=1.6cm] (js) {Script\\\code{procesarDatos}\\(cálculo de guardias)};
+  \node[salida,right=1.6cm of js] (pl) {Payload\\\code{resultado[ ]}};
+  \node[proceso,right=1.6cm of pl] (ep) {Endpoint\\\code{POST}};
+  \node[salida,right=1.6cm of ep] (crm) {Walcu CRM\\Usuarios\\actualizados};
+  \node[proceso,right=1.6cm of crm] (his) {Historiales\\trimestrales\\(3 automatismos)};
+
+  \draw[flecha] (b1.east) -- ++(0.8,0) |- ([yshift=0.35cm]js.west);
+  \draw[flecha] (b2.east) -- (js.west);
+  \draw[flecha] (ia.east) -- ++(0.8,0) |- ([yshift=-0.35cm]js.west);
+  \draw[flecha] (js) -- (pl);
+  \draw[flecha] (pl) -- (ep);
+  \draw[flecha] (ep) -- (crm);
+  \draw[flecha] (crm) -- (his);
+
+  \node[etiq,above=0.05cm of js] {\code{input.data}};
+  \node[etiq,above=0.05cm of pl] {\code{output}};
+\end{tikzpicture}}
+\caption{Flujo general del automatismo: de las búsquedas al CRM.}
+\end{figure}
+
+\subsection{Endpoint de destino}
+El \emph{payload} se envía mediante \code{POST} (sin autenticación, según la configuración del endpoint) a:
+
+\begin{lstlisting}[style=codigo]
+https://portal.crm.walcu.com/endpoints/famous-rising-victory/post-llenado-20-guardias
+\end{lstlisting}
+
+\nota{La ruta mostrada es la de la implementación actual. Si un centro cuenta con su propio endpoint, solo cambia la dirección; el cuerpo de la petición (sección \ref{sec:payload}) es el mismo.}
+
+%------------------------------------------------------------
+\section{Parametrización por centro}
+\label{sec:parametros}
+%------------------------------------------------------------
+
+Para llevar el automatismo a otro centro \textbf{no se modifica el código}. Se reconfiguran los siguientes parámetros, cada uno en el lugar indicado:
+
+\begin{longtable}{@{}p{3.4cm}p{3.6cm}p{4.2cm}p{3.4cm}@{}}
+\toprule
+\textbf{Parámetro} & \textbf{Dónde se configura} & \textbf{Valor actual (ejemplo)} & \textbf{Cambia por centro} \\
+\midrule
+\endhead
+Centro & Filtro \emph{Centro} en ambas búsquedas & byd mexicali & Sí \\
+Fuente de leads & Filtro \emph{Fuente / Quién} (Búsqueda 1) & Fresh-Up & Según el centro \\
+Rol de asesores & Filtro \emph{Tipo Rol} (Búsqueda 1) & Asesor Tradicional & Según el centro \\
+Periodo evaluado & Variables \code{FI} y \code{FF} (Búsqueda 1) & Definido por el flujo & No (lo define el flujo) \\
+Antigüedad de nuevos & Filtros de fecha de creación (Búsqueda 2) & Más de 31 y menos de 90 días & Según la política \\
+Grupo asesor digital & Filtro (Búsqueda 2) & Falso & Según el centro \\
+Reglas del total & Instrucciones del modelo de IA & Reglas del centro & Sí \\
+Total de respaldo & Código (constante) & 151 & Sí (ver nota) \\
+Endpoint & Configuración del endpoint de Walcu & Ruta indicada en la sección 2.2 & Según el centro \\
+Piso de nuevos & Código (constante) & 10\,\% & Según la política \\
+\bottomrule
+\end{longtable}
+
+\nota{Dos valores están \textbf{fijos dentro del código}: el total de respaldo (151) y el piso de asesores nuevos (10\,\%). Si distintos centros necesitan valores diferentes, conviene mantener una copia del script por centro o convertir esos valores en variables de entrada. El resto de los parámetros no requiere tocar el código.}
+
+\subsection{Procedimiento para habilitar un nuevo centro}
+\begin{enumerate}[nosep]
+  \item Duplicar la Búsqueda 1 y la Búsqueda 2 y cambiar el filtro de centro (y, si aplica, la fuente, el rol y el grupo digital).
+  \item Ajustar el rango de antigüedad de la Búsqueda 2 si el centro maneja una política distinta.
+  \item Configurar las reglas del modelo de IA que define \code{totalg} para ese centro.
+  \item Confirmar el endpoint de destino y su esquema de cuerpo.
+  \item Confirmar que los tres historiales (visitas, ventas y porcentaje) existen para los usuarios del centro.
+  \item Ejecutar una prueba revisando los campos \code{debug\_*} y el \emph{payload} antes de activar el envío automático.
+\end{enumerate}
+
+%------------------------------------------------------------
+\section{Configuración de las búsquedas en el CRM}
+%------------------------------------------------------------
+
+Las dos primeras entradas del script son \textbf{objetos de búsqueda} creados dentro de Walcu. Ambos usan el tipo de búsqueda \emph{Formar bloque de texto}, que genera una cadena de texto con un fragmento por cada registro encontrado. Ese texto es el que el script recibe y convierte en datos.
+
+\subsection{Búsqueda 1: leads del centro (\texttt{Busqueda1})}
+
+Su objetivo es obtener los leads del centro seleccionado durante el periodo evaluado. De ellos se calculan las \textbf{visitas} (cada lead cuenta como una visita) y las \textbf{ventas} (los leads que además tienen factura).
+
+\begin{longtable}{@{}p{4.2cm}p{10.6cm}@{}}
+\toprule
+\textbf{Parámetro} & \textbf{Configuración} \\
+\midrule
+\endhead
+Colección & \emph{Lead} \\
+Ordenar por & Fecha de creación, descendente \\
+Filtro: Fuente / Quién & Es la fuente de leads del centro (\emph{ejemplo: Fresh-Up}) \\
+Filtro: Centro & Es el centro a evaluar (\emph{ejemplo: byd mexicali}) \\
+Filtro: Tipo de rol & Es el rol de los asesores evaluados (\emph{ejemplo: Asesor Tradicional}) \\
+Filtro: Asignado a & No es \emph{inactivos} \\
+Filtro: Fecha de creación del lead & Entre las variables \code{FI} (fecha inicial) y \code{FF} (fecha final), que definen el periodo evaluado \\
+Tipo de búsqueda & Formar bloque de texto \\
+\bottomrule
+\end{longtable}
+
+\textbf{Texto generado por cada elemento:}
+
+\begin{lstlisting}[style=codigo,language=json]
+{ "id": "<Lead: Asignado a>",
+  "asignado_a": "<usuario asignado: Nombre>",
+  "fecha_factura": "<Lead: Fecha Factura>" }
+\end{lstlisting}
+
+\begin{longtable}{@{}p{3.2cm}p{4.6cm}p{7cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Dato del CRM} & \textbf{Uso en el script} \\
+\midrule
+\endhead
+\code{id} & Lead: Asignado a (ID del usuario) & Es la \textbf{llave del asesor}. Agrupa los leads y es el ID que viaja en el \emph{payload}. \\
+\code{asignado\_a} & Nombre del usuario asignado & Solo informativo; el script \textbf{no lo utiliza} en el cálculo. \\
+\code{fecha\_factura} & Lead: Fecha Factura & Si tiene valor, el lead cuenta como \textbf{venta}; si está vacío, solo cuenta como visita. \\
+\bottomrule
+\end{longtable}
+
+\nota{Al generar un bloque de texto, cada lead produce un objeto \code{\{...\}}. Para que el script pueda leerlos como una lista JSON, el \textbf{separador} de la búsqueda debe ser una \textbf{coma} (\code{,}). El script envuelve el texto entre corchetes automáticamente, pero no puede corregir un separador distinto.}
+
+\subsection{Búsqueda 2: asesores de reciente ingreso (\texttt{Busqueda2})}
+
+Su objetivo es identificar a los asesores del centro que tienen entre 31 y 90 días de antigüedad (rango del ejemplo; se puede ajustar por centro). A estos asesores se les garantiza un mínimo en el reparto, porque al ser nuevos pueden tener pocos leads o ninguno y, sin ese mínimo, quedarían sin guardias.
+
+\begin{longtable}{@{}p{4.2cm}p{10.6cm}@{}}
+\toprule
+\textbf{Parámetro} & \textbf{Configuración} \\
+\midrule
+\endhead
+Colección & \emph{Usuario} \\
+Ordenar por & Fecha de creación, descendente \\
+Filtro: Centro & Es el centro a evaluar (\emph{ejemplo: byd mexicali}) \\
+Filtro: Fecha de creación & Hace \textbf{más de 31 días} \\
+Filtro: Fecha de creación & Hace \textbf{menos de 90 días} \\
+Filtro: Grupo asesor digital & Es \emph{falso} \\
+Filtro: Activo & Es \emph{verdadero} \\
+Tipo de búsqueda & Formar bloque de texto \\
+\bottomrule
+\end{longtable}
+
+\textbf{Texto generado por cada elemento:}
+
+\begin{lstlisting}[style=codigo,language=json]
+{ "idN": "<Usuario: ID de Usuario>" }
+\end{lstlisting}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[x=0.12cm]
+  \draw[thick,-{Stealth}] (0,0) -- (118,0) node[right,font=\scriptsize] {días};
+  \fill[verdeclaro,draw=verdecod,thick] (31,-0.35) rectangle (90,0.35);
+  \node[font=\footnotesize,color=verdecod!60!black] at (60.5,0) {Asesor nuevo (Búsqueda 2)};
+  \foreach \d/\t in {0/0,31/31,90/90} {
+    \draw (\d,-0.12) -- (\d,0.12);
+    \node[font=\scriptsize,below=4pt] at (\d,0) {\t};
+  }
+  \node[font=\scriptsize,above=7pt,align=center] at (15,0) {Muy reciente\\(sin mínimo)};
+  \node[font=\scriptsize,above=7pt,align=center] at (105,0) {Antiguo\\(sin mínimo)};
+\end{tikzpicture}
+\caption{Ventana de antigüedad del usuario que define a un asesor como nuevo.}
+\end{figure}
+
+\nota{Un asesor se considera \emph{nuevo} únicamente si aparece en \code{Busqueda2}. El script no calcula la antigüedad: confía por completo en los filtros de la búsqueda. Si se cambian los filtros (por ejemplo, 31 o 90 días), cambia automáticamente quién recibe el mínimo.}
+
+\subsection{Total de guardias (\texttt{totalg}): modelo de inteligencia artificial}
+El tercer dato de entrada, \code{totalg}, \textbf{no se calcula en el script}. Es la salida de un paso previo del flujo donde un modelo de IA recibe un conjunto de reglas del centro y determina cuántas guardias se deben repartir según el total de guardias del centro del endpoint. El script solo recibe el número y lo reparte.
+
+\aviso{El script convierte \code{totalg} con \code{Number()}. Si el modelo responde algo que no es un número puro (por ejemplo \code{"151 guardias"}), la conversión falla y el script usa \textbf{151 sin avisar}. Se recomienda instruir al modelo para que responda \textbf{solo un número entero}, sin texto ni decimales.}
+
+%------------------------------------------------------------
+\section{Variables de entrada del script}
+%------------------------------------------------------------
+
+Todas las entradas se leen del objeto \code{input.data}.
+
+\begin{longtable}{@{}p{2.6cm}p{3.6cm}p{8.6cm}@{}}
+\toprule
+\textbf{Variable} & \textbf{Origen} & \textbf{Descripción} \\
+\midrule
+\endhead
+\code{Busqueda1} & Búsqueda de \emph{Lead} & Texto con un objeto por lead. \textbf{Obligatoria}: si falta, el script termina con error. \\
+\code{Busqueda2} & Búsqueda de \emph{Usuario} & Texto con un \code{idN} por asesor nuevo. Opcional. \\
+\code{totalg} & Modelo de IA & Total de guardias a repartir. Si no es un número válido, se usa \textbf{151}. \\
+\bottomrule
+\end{longtable}
+
+%------------------------------------------------------------
+\section{Funcionamiento detallado del código}
+%------------------------------------------------------------
+
+\subsection{Estructura general}
+El código completo está dentro de una función que se invoca a sí misma: una función anónima autoinvocada llamada \code{procesarDatos}, y dentro de un bloque \code{try/catch}. Esto garantiza dos cosas: las variables internas no contaminan el entorno del flujo, y cualquier error se captura y se reporta en \code{output["error"]} en lugar de detener el automatismo de forma abrupta.
+
+El script usa dos objetos que provee la plataforma: \code{input} (datos de entrada) y \code{output} (datos que se devuelven al flujo).
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[node distance=0.55cm]
+  \node[entrada] (a) {Leer \code{Busqueda1}, \code{Busqueda2}, \code{totalg}};
+  \node[proceso,below=of a] (b) {Registrar campos \code{debug\_*}};
+  \node[decision,below=0.6cm of b] (c) {¿\code{Busqueda1}\\existe?};
+  \node[errorc,right=1.6cm of c] (err) {Error $\rightarrow$ \code{output["error"]}};
+  \node[proceso,below=0.6cm of c] (d) {Convertir \code{Busqueda1} en lista de leads};
+  \node[proceso,below=of d] (e) {Extraer IDs de asesores nuevos};
+  \node[proceso,below=of e] (f) {Contar visitas y ventas por asesor};
+  \node[proceso,below=of f] (g) {Agregar nuevos sin actividad (0 visitas)};
+  \node[proceso,below=of g] (h) {Calcular \% de cierre y aplicar piso de 10\%};
+  \node[proceso,below=of h] (i) {Calcular guardias exactas, parte entera y residuo};
+  \node[proceso,below=of i] (j) {Repartir guardias faltantes por mayor residuo};
+  \node[salida,below=of j] (k) {Construir \code{payload} $\rightarrow$ \code{output["resultado"]}};
+
+  \draw[flecha] (a) -- (b);
+  \draw[flecha] (b) -- (c);
+  \draw[flecha] (c) -- node[etiq,above] {no} (err);
+  \draw[flecha] (c) -- node[etiq,right] {sí} (d);
+  \draw[flecha] (d) -- (e);
+  \draw[flecha] (e) -- (f);
+  \draw[flecha] (f) -- (g);
+  \draw[flecha] (g) -- (h);
+  \draw[flecha] (h) -- (i);
+  \draw[flecha] (i) -- (j);
+  \draw[flecha] (j) -- (k);
+\end{tikzpicture}
+\caption{Secuencia de ejecución del script \code{procesarDatos}.}
+\end{figure}
+
+\subsection{Bloque 1: lectura de entradas y diagnóstico}
+\begin{lstlisting}[style=codigo,language=JS]
+const rawData = input.data.Busqueda1;
+const rawIDN  = input.data.Busqueda2;
+const rawG_A  = input.data.totalg;
+\end{lstlisting}
+Se guardan las tres entradas en variables. Enseguida el script escribe en \code{output} el tipo y los primeros 300 caracteres de cada entrada (campos \code{debug\_*}). Esto se hace \textbf{antes} de cualquier validación, de modo que aunque el script falle más adelante, siempre queda registro de lo que se recibió. Es la primera herramienta para diagnosticar problemas.
+
+\begin{lstlisting}[style=codigo,language=JS]
+const totalGuardiasBase = Number(rawG_A) || 151;
+\end{lstlisting}
+Convierte \code{totalg} a número. El operador \code{||} usa 151 cuando el resultado es \code{NaN}, vacío o cero.
+
+\subsection{Bloque 2: conversión de \texttt{Busqueda1} en lista de leads}
+\begin{lstlisting}[style=codigo,language=JS]
+if (typeof rawData === 'string') {
+  let textLimpio = rawData.trim();
+  if (!textLimpio.startsWith('['))
+    textLimpio = `[${textLimpio}]`;
+  listaLeads = JSON.parse(textLimpio);
+}
+\end{lstlisting}
+El bloque de texto del CRM es una secuencia de objetos separados por comas, por ejemplo \code{\{...\}, \{...\}}. Eso no es JSON válido por sí solo; al envolverlo entre corchetes se convierte en un arreglo y \code{JSON.parse} lo transforma en una lista de objetos. Si la entrada ya llegó como arreglo u objeto, se usa directamente (en un objeto se busca primero \code{data}, luego \code{leads}, y si no existen se toma el objeto como único lead).
+
+Después se valida que el resultado sea un arreglo con al menos un elemento; de lo contrario se lanza un error descriptivo.
+
+\subsection{Bloque 3: extracción de asesores nuevos (\texttt{Busqueda2})}
+La función \code{extraerIDsRecursivo} recorre cualquier estructura y agrega los IDs a un conjunto (\code{Set}), que elimina duplicados automáticamente. Su comportamiento según el tipo de dato:
+
+\begin{longtable}{@{}p{3cm}p{11.8cm}@{}}
+\toprule
+\textbf{Tipo recibido} & \textbf{Acción} \\
+\midrule
+\endhead
+Vacío & No hace nada. \\
+Texto & Si parece JSON (empieza con \code{[} o \code{\{}) intenta interpretarlo y reprocesarlo. Si falla (por ejemplo, varios objetos separados por comas), \textbf{ignora el error} y extrae los IDs con una expresión regular. \\
+Número & Lo convierte a texto y lo agrega. \\
+Arreglo & Procesa cada elemento. \\
+Objeto & Procesa primero \code{idN}, \code{IDN}, \code{id} o \code{"Usuario: ID de Usuario"} y luego recorre todas las claves. \\
+\bottomrule
+\end{longtable}
+
+La expresión regular reconoce dos formas de ID:
+\begin{lstlisting}[style=codigo,language=JS]
+/([a-fA-F0-9]{24}|[a-zA-Z0-9_\-]{5,})/g
+\end{lstlisting}
+Un identificador hexadecimal de 24 caracteres, o cualquier cadena alfanumérica de 5 o más caracteres. Después se descartan palabras reservadas (\code{id}, \code{idn}, \code{text}, \code{value}, \code{null}, \code{undefined}, \code{usuario}, \code{true}, \code{false}) para que los nombres de las claves no se confundan con IDs.
+
+\nota{Con el formato de la Búsqueda 2 (\code{\{ "idN": "..." \}}), la clave \code{idN} tiene solo 3 caracteres y por eso no se confunde con un ID. Si los IDs de usuario fueran numéricos de menos de 5 dígitos, la expresión regular no los detectaría; con IDs de 24 caracteres no hay problema.}
+
+\subsection{Bloque 4: métricas por asesor}
+\begin{lstlisting}[style=codigo,language=JS]
+const rawId = lead["id"] || lead["ID"] || ... || "Sin_ID";
+const esVentaValida = fechaFactura
+  && String(fechaFactura).trim() !== ""
+  && String(fechaFactura).trim() !== "null"
+  && String(fechaFactura).trim() !== "undefined";
+\end{lstlisting}
+Por cada lead se identifica al asesor (usando el primer nombre de campo que tenga valor) y se determina si es una venta: la fecha de factura debe existir y no ser vacía ni el texto \code{null} o \code{undefined}. Esto es importante porque, al formar el bloque de texto, un campo sin valor puede llegar como texto vacío o como la palabra \code{null}.
+
+Se mantiene un diccionario \code{metricasAsesores} con \code{visitas} y \code{ventas} por ID. \textbf{Cada lead suma una visita}; \textbf{solo los que tienen factura suman una venta}.
+
+A continuación se agregan los asesores nuevos que no tuvieron ningún lead, con 0 visitas y 0 ventas, para que participen en el reparto.
+
+\subsection{Bloque 5: porcentaje de cierre y piso para nuevos}
+\begin{lstlisting}[style=codigo,language=JS]
+let pctCierreCalculado = datos.visitas > 0
+  ? (datos.ventas / datos.visitas) * 100 : 0;
+let pctCierreFinal = pctCierreCalculado;
+if (idsNuevos.has(datos.id) && pctCierreCalculado < 10)
+  pctCierreFinal = 10;
+\end{lstlisting}
+El porcentaje de cierre es ventas entre visitas por 100 (y 0 si no hubo visitas). Si el asesor está en \code{Busqueda2} y su cierre es \textbf{menor a 10}, se eleva a 10. Si su cierre es 10 o mayor, \textbf{se respeta el porcentaje real}. Al mismo tiempo se acumula \code{sumaPorcentajesCierre}, que servirá de denominador.
+
+\aviso{El 10\,\% es un \textbf{piso de porcentaje de cierre} utilizado como peso en el reparto, \textbf{no} un 10\,\% del total de guardias. La cantidad real de guardias que recibe un asesor nuevo depende de cuántos asesores haya y de sus porcentajes: por ejemplo, con 10 asesores del mismo peso, un nuevo recibiría aproximadamente la décima parte.}
+
+\subsection{Bloque 6: reparto proporcional con redondeo exacto}
+\begin{lstlisting}[style=codigo,language=JS]
+const peso = suma > 0 ? asesor.pctCierre / suma : 0;
+const guardiasExactas = peso * totalGuardiasBase;
+const guardiasBase = Math.floor(guardiasExactas);
+const residuo = guardiasExactas - guardiasBase;
+\end{lstlisting}
+Cada asesor recibe una fracción del total proporcional a su porcentaje de cierre. Como las guardias son enteras, se toma la parte entera (\code{Math.floor}) y se conserva el residuo decimal. Se suman las guardias base asignadas y se calcula cuántas faltan para llegar al total:
+
+\begin{lstlisting}[style=codigo,language=JS]
+let guardiasFaltantes = totalGuardiasBase - totalAsignadoBase;
+itemsCalculados.sort((a, b) => b.residuo - a.residuo);
+for (let i = 0; i < guardiasFaltantes; i++)
+  itemsCalculados[i].guardiasFinales += 1;
+\end{lstlisting}
+Se ordenan los asesores de mayor a menor residuo y se da una guardia extra a los primeros hasta completar el total. Con esto la suma de guardias asignadas es \textbf{exactamente} igual a \code{totalg}. Por efecto del ordenamiento, el \emph{payload} \textbf{no sale ordenado por ID}, sino por residuo.
+
+\subsection{Bloque 7: construcción del \emph{payload}}
+\begin{lstlisting}[style=codigo,language=JS]
+const payload = itemsCalculados.map(asesor => ({
+  id: String(asesor.id),
+  guardias_asignadas: String(asesor.guardiasFinales),
+  ventas: Number(asesor.ventas),
+  visitas: Number(asesor.visitas),
+  porcentaje: `${asesor.pctCierre.toFixed(2)}%`
+}));
+output["resultado"] = payload;
+\end{lstlisting}
+Se transforma cada asesor al formato que espera el endpoint. Los tipos de dato coinciden con el esquema configurado en el cuerpo de la petición: \code{id}, \code{guardias\_asignadas} y \code{porcentaje} como texto, \code{ventas} y \code{visitas} como número.
+
+%------------------------------------------------------------
+\section{Estructura del payload y del cuerpo de la petición}
+\label{sec:payload}
+%------------------------------------------------------------
+
+El cuerpo de la petición del endpoint está definido como un objeto raíz con una lista llamada \code{resultado}; cada elemento de la lista es un objeto con cinco campos.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[node distance=0.45cm and 0.9cm,
+  nodo/.style={caja,minimum width=2.4cm},
+  hoja/.style={caja,fill=white,minimum width=3.2cm,align=left}]
+  \node[nodo,fill=azul!15] (root) {ROOT\\\scriptsize object};
+  \node[nodo,right=of root,fill=azul!15] (res) {\code{resultado}\\\scriptsize array};
+  \node[nodo,right=of res,fill=azul!15] (it) {ITEMS\\\scriptsize object};
+  \node[hoja,right=1.2cm of it,yshift=1.9cm] (f1) {\code{id} \hfill \scriptsize string};
+  \node[hoja,below=0.25cm of f1] (f2) {\code{guardias\_asignadas} \hfill \scriptsize string};
+  \node[hoja,below=0.25cm of f2] (f3) {\code{porcentaje} \hfill \scriptsize string};
+  \node[hoja,below=0.25cm of f3] (f4) {\code{ventas} \hfill \scriptsize number};
+  \node[hoja,below=0.25cm of f4] (f5) {\code{visitas} \hfill \scriptsize number};
+  \draw[flecha] (root) -- (res);
+  \draw[flecha] (res) -- (it);
+  \foreach \n in {f1,f2,f3,f4,f5} { \draw[flecha] (it.east) -- (\n.west); }
+\end{tikzpicture}
+\caption{Estructura del cuerpo de la petición configurado en el endpoint.}
+\end{figure}
+
+\begin{longtable}{@{}p{3.6cm}p{1.8cm}p{9.2cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Tipo} & \textbf{Qué contiene} \\
+\midrule
+\endhead
+\code{id} & string & ID del usuario en Walcu. Es la \textbf{llave de enlace} con el CRM. \\
+\code{guardias\_asignadas} & string & Guardias finales calculadas para ese asesor. \\
+\code{porcentaje} & string & Porcentaje de cierre final con dos decimales (incluye el piso de 10\,\% cuando aplicó). \\
+\code{ventas} & number & Leads con factura en el periodo. \\
+\code{visitas} & number & Total de leads atendidos en el periodo. \\
+\bottomrule
+\end{longtable}
+
+Ejemplo de \emph{payload}:
+
+\begin{lstlisting}[style=codigo,language=json]
+{
+  "resultado": [
+    { "id": "64f1a2b3c4d5e6f7a8b9c0d1", "guardias_asignadas": "6",
+      "ventas": 4, "visitas": 10, "porcentaje": "40.00%" },
+    { "id": "64f1a2b3c4d5e6f7a8b9c0d2", "guardias_asignadas": "3",
+      "ventas": 1, "visitas": 5,  "porcentaje": "20.00%" },
+    { "id": "64f1a2b3c4d5e6f7a8b9c0d3", "guardias_asignadas": "1",
+      "ventas": 0, "visitas": 0,  "porcentaje": "10.00%" }
+  ]
+}
+\end{lstlisting}
+
+\subsection{Campos de diagnóstico (\emph{debug})}
+\begin{longtable}{@{}p{5.6cm}p{9.2cm}@{}}
+\toprule
+\textbf{Campo} & \textbf{Contenido} \\
+\midrule
+\endhead
+\code{debug\_rawData\_tipo} / \code{\_muestra} & Tipo y primeros 300 caracteres de \code{Busqueda1}. \\
+\code{debug\_rawIDN\_tipo} / \code{\_muestra} & Tipo y primeros 300 caracteres de \code{Busqueda2}. \\
+\code{debug\_rawG\_A\_tipo} / \code{\_muestra} & Tipo y valor de \code{totalg}. \\
+\code{debug\_listaLeads\_count} & Leads leídos de \code{Busqueda1}. \\
+\code{debug\_idsNuevos\_count} & Asesores nuevos detectados en \code{Busqueda2}. \\
+\code{debug\_payload\_count} & Asesores incluidos en el \emph{payload}. \\
+\code{debug\_status} & Mensaje de éxito al finalizar. \\
+\bottomrule
+\end{longtable}
+
+%------------------------------------------------------------
+\section{Funcionamiento del endpoint}
+%------------------------------------------------------------
+
+Una vez que el flujo tiene el \emph{payload}, lo envía por \code{POST} al endpoint de Walcu. El endpoint \textbf{no calcula nada}: solo aplica en el CRM lo que el script ya decidió.
+
+\begin{figure}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.8cm and 1.1cm]
+  \node[salida] (pl) {Payload\\\code{resultado[ ]}};
+  \node[proceso,right=of pl] (it) {Tomar cada\\elemento\\de la lista};
+  \node[proceso,right=of it] (bus) {Buscar en Walcu\\al usuario cuyo ID\\coincide con \code{id}};
+  \node[decision,right=of bus] (ex) {¿Existe el\\usuario?};
+  \node[proceso,right=1.3cm of ex] (upd) {Actualizar los\\campos del usuario\\en el CRM};
+  \node[errorc,below=of ex] (om) {No se actualiza\\(sin coincidencia)};
+  \draw[flecha] (pl) -- (it);
+  \draw[flecha] (it) -- (bus);
+  \draw[flecha] (bus) -- (ex);
+  \draw[flecha] (ex) -- node[etiq,above] {sí} (upd);
+  \draw[flecha] (ex) -- node[etiq,right] {no} (om);
+  \draw[flecha,dashed] (upd.north) -- ++(0,0.9) -| node[etiq,above,pos=0.2] {siguiente elemento} (it.north);
+\end{tikzpicture}}
+\caption{Proceso del endpoint para cada asesor del \emph{payload}.}
+\end{figure}
+
+\subsection{Enlace por ID}
+La conexión entre el cálculo y el CRM es el campo \code{id}. Ese valor proviene de \textbf{Lead: Asignado a} (Búsqueda 1) o de \textbf{Usuario: ID de Usuario} (Búsqueda 2), es decir, es el mismo ID con el que Walcu identifica al usuario. Por eso es indispensable que ambas búsquedas entreguen el ID en el mismo formato: así el script puede reconocer que un asesor de \code{Busqueda2} es el mismo que aparece en los leads de \code{Busqueda1}, y el endpoint puede encontrarlo en el CRM.
+
+\subsection{Actualización de campos}
+Con el usuario localizado, el endpoint escribe en sus campos del CRM los datos recibidos (guardias asignadas y, según la configuración, ventas, visitas y porcentaje). Los campos de destino exactos se definen en la configuración interna del endpoint de Walcu. Cuando el valor de visitas, ventas o porcentaje cambia, el CRM dispara además el archivado del valor anterior en los historiales trimestrales (sección \ref{sec:historiales}).
+
+\aviso{Si un leads no tiene asesor asignado, el script lo agrupa bajo el ID \code{Sin\_ID} y ese grupo \textbf{también recibe guardias} en el reparto, pero el endpoint no encontrará ningún usuario con ese ID y esas guardias \textbf{no se asignarán a nadie}. Conviene revisar que el \emph{payload} no contenga \code{Sin\_ID} antes de enviarlo.}
+
+%------------------------------------------------------------
+\section{Historiales trimestrales}
+\label{sec:historiales}
+%------------------------------------------------------------
+
+\subsection{Qué son y para qué sirven}
+Cada usuario tiene tres indicadores vigentes: \textbf{visitas}, \textbf{ventas} y \textbf{porcentaje}. Cada uno cuenta con un \textbf{historial} dentro del CRM que conserva \textbf{un año} de antigüedad, organizado por \textbf{trimestres}. Así, además del dato actual, se puede consultar cómo fue el desempeño de cada asesor en los trimestres anteriores.
+
+\begin{longtable}{@{}p{2.8cm}p{3.6cm}p{8.4cm}@{}}
+\toprule
+\textbf{Indicador} & \textbf{Historial} & \textbf{Qué conserva} \\
+\midrule
+\endhead
+Visitas & Historial de visitas & Valores anteriores de visitas, por trimestre, hasta un año. \\
+Ventas & Historial de ventas & Valores anteriores de ventas, por trimestre, hasta un año. \\
+Porcentaje & Historial de porcentaje & Valores anteriores de porcentaje, por trimestre, hasta un año. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Regla de funcionamiento}
+El principio es sencillo: \textbf{cada mes el valor vigente se sustituye por el nuevo, y el valor que había se guarda en el historial}.
+
+\begin{enumerate}[nosep]
+  \item El automatismo mensual (día 1 de cada mes) calcula el reparto y genera el \emph{payload}.
+  \item El endpoint escribe en cada usuario el \textbf{valor nuevo} de visitas, ventas y porcentaje, \textbf{sustituyendo} el valor que tenía.
+  \item Como el valor \textbf{cambió}, el CRM llama al automatismo del historial correspondiente (uno por indicador).
+  \item Ese automatismo toma el \textbf{valor anterior} (el que acaba de ser sustituido) y lo guarda en el \textbf{trimestre} que le corresponde dentro del historial.
+\end{enumerate}
+
+\aviso{Los historiales guardan \textbf{valores anteriores}, no el valor actual. El dato vigente siempre está en el campo del usuario; el historial contiene lo que ese campo valía antes de cada cambio.}
+
+\begin{figure}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 1.1cm]
+  \node[proceso,minimum height=1.4cm] (ep) {Endpoint\\escribe el\\valor nuevo};
+  \node[salida,right=1.5cm of ep] (cv) {Campo \emph{Ventas}\\valor anterior $\rightarrow$ nuevo};
+  \node[salida,above=of cv] (cvi) {Campo \emph{Visitas}\\valor anterior $\rightarrow$ nuevo};
+  \node[salida,below=of cv] (cp) {Campo \emph{Porcentaje}\\valor anterior $\rightarrow$ nuevo};
+  \node[proceso,right=1.6cm of cv] (hv) {Automatismo\\Historial de ventas};
+  \node[proceso,above=of hv] (hvi) {Automatismo\\Historial de visitas};
+  \node[proceso,below=of hv] (hp) {Automatismo\\Historial de porcentaje};
+  \node[entrada,right=1.6cm of hv,minimum height=1.4cm] (tr) {Trimestre del\\historial\\(valor anterior)};
+  \draw[flecha] (ep.east) -- ++(0.5,0) |- (cvi.west);
+  \draw[flecha] (ep.east) -- (cv.west);
+  \draw[flecha] (ep.east) -- ++(0.5,0) |- (cp.west);
+  \draw[flecha] (cvi) -- node[etiq,above] {cambia} (hvi);
+  \draw[flecha] (cv) -- node[etiq,above] {cambia} (hv);
+  \draw[flecha] (cp) -- node[etiq,above] {cambia} (hp);
+  \draw[flecha] (hvi.east) -- ++(0.5,0) |- (tr.west);
+  \draw[flecha] (hv) -- (tr);
+  \draw[flecha] (hp.east) -- ++(0.5,0) |- (tr.west);
+\end{tikzpicture}}
+\caption{Cada cambio de valor dispara el archivado del valor anterior en su historial.}
+\end{figure}
+
+\subsection{Condición de disparo: solo cuando el valor cambia}
+El automatismo de cada historial \textbf{se dispara únicamente cuando el valor cambia}. Esto tiene consecuencias prácticas:
+
+\begin{itemize}[nosep]
+  \item Si el valor nuevo es \textbf{igual} al anterior (por ejemplo, un asesor que repite las mismas ventas), \textbf{no se genera registro} en el historial para ese indicador.
+  \item Cada indicador se evalúa por separado: en un mismo mes puede cambiar el porcentaje y no las ventas, y solo se archivará el que cambió.
+  \item Un asesor que no aparece en el \emph{payload} no se actualiza, no cambia su valor y por tanto no genera historial.
+\end{itemize}
+
+\subsection{Ejemplo ilustrativo}
+Valores ficticios del indicador \emph{ventas} de un asesor, ejecutando el automatismo el 1 de diciembre y el 1 de enero:
+
+\begin{center}
+\begin{tabular}{@{}p{2.8cm}p{2.2cm}p{2.2cm}p{7.2cm}@{}}
+\toprule
+\textbf{Ejecución} & \textbf{Valor anterior} & \textbf{Valor nuevo} & \textbf{Resultado}\\
+\midrule
+1 de diciembre & 9 & 12 & El campo pasa a 12; el 9 se archiva en el historial\\
+1 de enero & 12 & 15 & El campo pasa a 15; el 12 se archiva en \textbf{octubre--diciembre}\\
+1 de febrero & 15 & 15 & Sin cambio: no se archiva nada\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+El caso de enero corresponde al comportamiento confirmado: al ejecutarse el 1 de enero, el valor desplazado se guarda en el historial del trimestre \textbf{octubre--diciembre}.
+
+\subsection{Retención de un año}
+Cada historial conserva únicamente \textbf{un año} de antigüedad, es decir, los últimos cuatro trimestres. Los registros que superan ese año dejan de conservarse.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}
+  \foreach \x/\t/\c in {0/{Trimestre\\más reciente}/rojoclaro,1/{Trimestre\\anterior}/naranjaclaro,2/{Hace\\dos trimestres}/verdeclaro,3/{Hace\\tres trimestres}/azulclaro} {
+    \node[draw=azul,fill=\c,minimum width=2.7cm,minimum height=1.0cm,align=center,font=\footnotesize] at (\x*2.9,0) {\t};
+  }
+  \node[draw=red!60!black,dashed,minimum width=2.7cm,minimum height=1.0cm,align=center,font=\footnotesize,color=red!60!black] at (4*2.9,0) {Más de un año\\(se descarta)};
+  \draw[decorate,decoration={brace,amplitude=6pt,mirror},thick,color=azul] (-1.4,-0.75) -- (3*2.9+1.4,-0.75) node[midway,below=8pt,font=\footnotesize] {Un año de historial (cuatro trimestres)};
+\end{tikzpicture}
+\caption{Ventana de retención de cada historial.}
+\end{figure}
+
+\subsection{Puntos por confirmar}
+\aviso{Solo está confirmado el ejemplo de enero (valor desplazado $\rightarrow$ trimestre octubre--diciembre). Quedan por definir, para la siguiente ampliación: (1) \textbf{en qué trimestre se guarda el valor desplazado en los demás meses} (por ejemplo, en febrero: ¿el trimestre en que ese valor estuvo vigente o el trimestre anterior al mes actual?); (2) si, cuando varios cambios caen en el mismo trimestre, cada uno \textbf{sustituye} al anterior dentro de ese trimestre o se conservan todos; (3) qué ocurre en la primera ejecución, cuando todavía no existe un valor anterior que archivar.}
+
+\subsection{Consideraciones sobre los historiales}
+\begin{itemize}[nosep]
+  \item Los historiales dependen de que el endpoint haya encontrado y actualizado al usuario: si un \code{id} no existe en Walcu, ese asesor no cambia y no se archiva.
+  \item Si una ejecución mensual falla (por ejemplo, con \code{output["error"]}), no se escriben valores nuevos y por tanto \textbf{no se generan cambios ni historial} ese mes.
+  \item Como el historial guarda el valor desplazado, el dato del mes en curso solo estará disponible en el historial \textbf{hasta que sea sustituido} en la siguiente ejecución.
+\end{itemize}
+
+%------------------------------------------------------------
+\section{Fórmulas del reparto}
+%------------------------------------------------------------
+
+Para cada asesor $i$ con $V_i$ visitas y $C_i$ ventas, y $G$ guardias totales:
+\begin{align}
+  p_i &= \begin{cases} \dfrac{C_i}{V_i}\times 100 & V_i>0\\[1ex] 0 & V_i=0\end{cases}\\[1ex]
+  p_i' &= \begin{cases} 10 & \text{si es nuevo y } p_i<10\\ p_i & \text{en otro caso}\end{cases}\\[1ex]
+  w_i &= \frac{p_i'}{S},\quad S=\sum_j p_j'\\[1ex]
+  g_i^{exacta} &= w_i\cdot G,\quad g_i^{base}=\lfloor g_i^{exacta}\rfloor,\quad r_i=g_i^{exacta}-g_i^{base}\\[1ex]
+  F &= G-\sum_i g_i^{base}
+\end{align}
+Los $F$ asesores con mayor residuo $r_i$ reciben una guardia adicional (método del mayor residuo).
+
+%------------------------------------------------------------
+\section{Ejemplo numérico completo}
+%------------------------------------------------------------
+
+\textbf{Datos:} $G=10$. Tres asesores; el asesor C is nuevo y no tiene actividad.
+
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Asesor} & \textbf{Visitas} & \textbf{Ventas} & \textbf{Cierre real} & \textbf{Cierre final $p'$}\\
+\midrule
+A & 10 & 4 & 40\,\% & 40\\
+B & 5 & 1 & 20\,\% & 20\\
+C (nuevo) & 0 & 0 & 0\,\% & 10 (piso)\\
+\midrule
+\multicolumn{4}{r}{\textbf{Suma $S$}} & \textbf{70}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+\textbf{Asesor} & \textbf{Peso} & \textbf{Exactas} & \textbf{Base} & \textbf{Residuo} & \textbf{Final}\\
+\midrule
+A & 0.5714 & 5.714 & 5 & 0.714 & 6\\
+B & 0.2857 & 2.857 & 2 & 0.857 & 3\\
+C & 0.1429 & 1.429 & 1 & 0.429 & 1\\
+\midrule
+\textbf{Total} & & 10 & 8 & & \textbf{10}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Faltan $F=2$ guardias. Por residuo: B (0.857), A (0.714), C (0.429). Reciben la guardia extra B y A, y el resultado final es \textbf{A = 6, B = 3, C = 1}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, bar width=14pt, width=11cm, height=6cm,
+  symbolic x coords={A,B,C}, xtick=data,
+  ymin=0, ymax=7.5, ylabel={Guardias},
+  legend style={at={(0.5,-0.18)},anchor=north,legend columns=-1,font=\footnotesize},
+  nodes near coords, nodes near coords style={font=\scriptsize},
+  enlarge x limits=0.3
+]
+\addplot[fill=azulclaro,draw=azul] coordinates {(A,5.714) (B,2.857) (C,1.429)};
+\addplot[fill=naranjaclaro,draw=naranja] coordinates {(A,6) (B,3) (C,1)};
+\legend{Guardias exactas,Guardias finales (enteras)}
+\end{axis}
+\end{tikzpicture}
+\caption{Guardias exactas frente a guardias finales del ejemplo.}
+\end{figure}
+
+%------------------------------------------------------------
+\section{Guía de uso}
+%------------------------------------------------------------
+
+\subsection{Ejecución normal}
+\begin{enumerate}[nosep]
+  \item Definir el periodo de evaluación mediante las variables \code{FI} y \code{FF} de la Búsqueda 1.
+  \item Ejecutar las búsquedas \code{Busqueda1} y \code{Busqueda2}.
+  \item Ejecutar el paso de IA que produce \code{totalg}.
+  \item Ejecutar el script y revisar \code{debug\_status} y los contadores \code{debug\_*}.
+  \item Si no hay \code{error}, enviar \code{output["resultado"]} por \code{POST} al endpoint.
+  \item Verificar en Walcu que los usuarios quedaron actualizados.
+  \item Verificar que, en los indicadores que cambiaron, el valor anterior quedó guardado en el historial del trimestre correspondiente (los indicadores sin cambio no generan registro).
+\end{enumerate}
+
+\subsection{Lista de verificación previa}
+\begin{itemize}[label=$\square$,nosep]
+  \item Las variables \code{FI} y \code{FF} cubren el periodo correcto.
+  \item El separador de ambas búsquedas es una coma.
+  \item \code{totalg} es un número entero mayor a cero.
+  \item \code{debug\_listaLeads\_count} es coherente con lo esperado.
+  \item El \emph{payload} no contiene \code{Sin\_ID}.
+  \item No existe \code{output["error"]}.
+  \item La configuración (centro, fuente, rol y antigüedad) corresponde al centro que se va a procesar.
+  \item La ejecución es el día 1 del mes.
+\end{itemize}
+
+\subsection{Cómo interpretar los resultados}
+\begin{itemize}[nosep]
+  \item Más cierre implica más guardias, de forma proporcional.
+  \item Un asesor nuevo (31 a 90 días) recibe, como mínimo, el peso de un 10\,\% de cierre.
+  \item Un asesor que no es nuevo y no tiene ventas recibe 0 guardias.
+  \item Un asesor que no es nuevo y no tuvo leads en el periodo no aparece en el \emph{payload}.
+  \item La suma de \code{guardias\_asignadas} es igual a \code{totalg}.
+\end{itemize}
+
+%------------------------------------------------------------
+\section{Solución de problemas}
+%------------------------------------------------------------
+
+\begin{longtable}{@{}p{4.4cm}p{5cm}p{5.4cm}@{}}
+\toprule
+\textbf{Síntoma} & \textbf{Causa probable} & \textbf{Acción} \\
+\midrule
+\endhead
+\code{error}: \code{Busqueda1} vacía & La búsqueda no devolvió leads (periodo sin datos o filtros muy restrictivos). & Revisar \code{FI}, \code{FF} y los filtros. \\
+Error de JSON al interpretar & El separador no es coma, o falta algún campo. & Revisar \code{debug\_rawData\_muestra}. \\
+Aparece \code{Sin\_ID} & Leads sin asesor asignado. & Filtrar o reasignar en el CRM. \\
+Ventas siempre en 0 & \code{fecha\_factura} llega vacía. & Revisar el campo \emph{Lead: Fecha Factura}. \\
+El asesor nuevo no recibe el piso & Su ID difiere entre búsquedas, o no cumple los filtros de antigüedad. & Comparar IDs; revisar los filtros. \\
+Siempre se reparten 151 & \code{totalg} no es un número válido. & Revisar \code{debug\_rawG\_A\_muestra}; ajustar la instrucción del modelo de IA. \\
+Un usuario no se actualiza & El \code{id} no existe en Walcu. & Verificar el ID en el CRM. \\
+El historial no registra el valor & El valor nuevo es igual al anterior (no hay cambio) o la ejecución del mes falló. & Comparar el valor anterior y el nuevo; revisar \code{debug\_status}. \\
+Valor anterior en el trimestre equivocado & Fecha de ejecución distinta al día 1 o regla del trimestre mal configurada en el automatismo. & Revisar la fecha de ejecución y el automatismo del historial. \\
+Resultados de otro centro & Filtro de centro incorrecto en las búsquedas. & Revisar el filtro \emph{Centro} en ambas búsquedas. \\
+\bottomrule
+\end{longtable}
+
+%------------------------------------------------------------
+\section{Consideraciones y limitaciones}
+%------------------------------------------------------------
+
+\begin{itemize}
+  \item \textbf{Valor de respaldo (151).} Está fijo en el código; si \code{totalg} falla, el reparto se hace con ese número sin generar un aviso.
+  \item \textbf{Salida de la IA.} Si el modelo devuelve decimales, el reparto puede asignar un número de guardias distinto al esperado. Debe devolver un entero.
+  \item \textbf{Asesores con 0\,\%.} Quienes no son nuevos y no tienen ventas quedan con 0 guardias; si todos los asesores estuvieran en 0\,\% y ninguno fuera nuevo, no se asignaría ninguna guardia.
+  \item \textbf{Empates.} Cuando dos asesores tienen el mismo residuo, el desempate depende del ordenamiento interno de JavaScript.
+  \item \textbf{Dependencia de los filtros.} La definición de asesor nuevo, el periodo y el tipo de rol dependen por completo de los filtros de las búsquedas.
+  \item \textbf{Nombre del endpoint.} Se llama \code{post-llenado-20-guardias}, mientras que el valor de respaldo del script es 151; conviene confirmar que la configuración del endpoint sea consistente con el total enviado.
+  \item \textbf{Constantes por centro.} El total de respaldo (151) y el piso de nuevos (10\,\%) están fijos en el código y son iguales para todos los centros que usen el mismo script.
+  \item \textbf{Historiales.} El archivado depende de automatismos del CRM ajenos al script; si no se ejecutan, el valor vigente se actualiza pero el historial no. Además, solo se archiva cuando el valor cambia y solo se conserva un año.
+\end{itemize}
+
+%------------------------------------------------------------
+\section{Calendario de guardias}
+\label{sec:calendario}
+%------------------------------------------------------------
+
+\subsection{Propósito}
+El calendario de guardias es una página que se abre desde el CRM al presionar el botón \emph{Calendario guardia}. Permite:
+\begin{itemize}[nosep]
+  \item A un \textbf{asesor}: ver las guardias ya ocupadas por sus compañeros, colocar las propias y enviarlas al CRM.
+  \item A un \textbf{gerente o coordinador}: consultar de forma general quién tiene guardia cada día y en qué turno.
+\end{itemize}
+La página que se muestra \textbf{depende del puesto} que la persona tiene registrado en el CRM: el CRM muestra la vista que corresponde a ese puesto cuando la persona presiona el botón.
+
+\subsection{Flujo general}
+\begin{figure}[h!]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.8cm and 1.0cm]
+  \node[entrada] (btn) {Botón\\\emph{Calendario guardia}};
+  \node[proceso,right=of btn] (dat) {Preparar datos\\usuario que abre\\+ búsqueda \code{lpjgh}};
+  \node[decision,right=of dat,minimum width=3.0cm,minimum height=1.5cm] (rol) {¿Puesto de\\gerente o\\coordinador?};
+  \node[salida,above right=0.6cm and 1.3cm of rol] (gv) {Vista general\\(solo lectura)};
+  \node[proceso,below right=0.6cm and 1.3cm of rol] (ed) {Calendario editable\\del asesor};
+  \node[proceso,right=of ed] (env) {Enviar selección\\\code{POST}};
+  \node[salida,right=of env] (up) {Campos del usuario\\actualizados};
+  \draw[flecha] (btn) -- (dat);
+  \draw[flecha] (dat) -- (rol);
+  \draw[flecha] (rol.north) |- node[etiq,pos=0.2,left] {sí} (gv.west);
+  \draw[flecha] (rol.south) |- node[etiq,pos=0.2,left] {no} (ed.west);
+  \draw[flecha] (ed) -- (env);
+  \draw[flecha] (env) -- (up);
+\end{tikzpicture}}
+\caption{Flujo del botón \emph{Calendario guardia} según el puesto del usuario.}
+\end{figure}
+
+\begin{enumerate}[nosep]
+  \item Al presionar el botón se preparan los datos: el usuario que abre el calendario y el resultado de la búsqueda de usuarios del centro (variable \code{lpjgh}).
+  \item Según el \textbf{puesto} de quien presionó el botón, el CRM muestra la \textbf{vista general} (puestos de gerente o coordinador) o el \textbf{calendario editable} (cualquier otro puesto).
+  \item En el calendario editable, el asesor marca sus guardias y las envía mediante \code{POST} a un endpoint.
+  \item El endpoint localiza al usuario por su ID y actualiza sus campos de guardias.
+\end{enumerate}
+
+\nota{El automatismo \textbf{no decide} quién es gerente o coordinador. En el CRM existen \emph{puestos}; cuando una persona cuyo puesto corresponde a gerente o coordinador presiona el botón, se le muestra la vista general, y a las demás personas se les muestra el calendario editable. Para cambiar quién ve cada vista basta con cambiar el puesto del usuario en el CRM; las páginas no contienen ninguna lista de personas ni de roles.}
+
+\subsection{Datos de entrada}
+
+\subsubsection{Variables de la plantilla}
+Ambas páginas son plantillas HTML que el CRM completa antes de mostrarlas, reemplazando variables entre llaves dobles:
+
+\begin{longtable}{@{}p{6.6cm}p{8.2cm}@{}}
+\toprule
+\textbf{Variable} & \textbf{Contenido} \\
+\midrule
+\endhead
+\code{\{\{1.user.first\_name\}\}}, \code{\{\{1.user.last\_name\}\}} & Nombre y apellidos del usuario que abre el calendario. \\
+\code{\{\{1.user.cantidad\_de\_guardias\}\}} & Cantidad de guardias sugeridas: un número de referencia que sirve de guía al colocar las guardias. \\
+\code{\{\{1.user.\_id\}\}} & ID del usuario; viaja en el envío como llave de enlace. \\
+\code{\{\{lpjgh.text.value\}\}} & Bloque de texto generado por la búsqueda de usuarios del centro (ver siguiente apartado). \\
+\bottomrule
+\end{longtable}
+
+\subsubsection{Búsqueda de usuarios (\texttt{lpjgh})}
+Esta búsqueda reúne las guardias que ya tiene registradas cada asesor del centro, para poder mostrarlas y marcar los espacios ocupados.
+
+\begin{longtable}{@{}p{4.6cm}p{10.2cm}@{}}
+\toprule
+\textbf{Parámetro} & \textbf{Configuración} \\
+\midrule
+\endhead
+Colección & \emph{Usuario} \\
+Ordenar por & Fecha de creación, descendente \\
+Filtro: Centro & Es el centro (variable \emph{Centro}); cambia según el centro que use el calendario \\
+Filtro: Cantidad de guardias sugeridas & No está vacío (solo asesores con guardias sugeridas) \\
+Tipo de búsqueda & Formar bloque de texto \\
+Separador & Coma (\code{,}) \\
+Procesar hasta & 100 elementos \\
+\bottomrule
+\end{longtable}
+
+Texto generado por cada usuario:
+
+\begin{lstlisting}[style=codigo,language=json]
+{"nombre":"<Nombre> <Apellidos>",
+ "gd":"<Guardia Matutina>",   "gt":"<Guardia Vespertina>",
+ "smgd":"<G SM Day>",         "smgn":"<G SM Tarde>",
+ "GIT":"<Guardia intermedia>","GITS":"<Guardia ITSM>"}
+\end{lstlisting}
+
+Cada campo de guardias contiene una \textbf{lista de números de día separados por coma} (por ejemplo, \code{"3,10,17"}). La página los separa y los compara con el número de cada día del calendario.
+
+\subsubsection{Campos de guardias}
+\begin{longtable}{@{}p{2.1cm}p{1.7cm}p{3.5cm}p{7.5cm}@{}}
+\toprule
+\textbf{Búsqueda} & \textbf{Envío} & \textbf{Campo del CRM} & \textbf{Significado} \\
+\midrule
+\endhead
+\code{gd} & \code{GD} & Guardia Matutina & Guardias de \textbf{día} del mes en curso. \\
+\code{gt} & \code{GN} & Guardia Vespertina & Guardias de \textbf{noche} del mes en curso. \\
+\code{smgd} & \code{SMGD} & G SM Day & Guardias de \textbf{día} del \textbf{siguiente mes}. \\
+\code{smgn} & \code{SMGN} & G SM Tarde & Guardias de \textbf{noche} del \textbf{siguiente mes}. \\
+\code{GIT} & \code{GIT} & Guardia intermedia & Guardias \textbf{intermedias}, solo aplicables a \textbf{fines de semana} del mes en curso. \\
+\code{GITS} & \code{GITS} & Guardia ITSM & Guardias intermedias de fin de semana del \textbf{siguiente mes}. \\
+\bottomrule
+\end{longtable}
+
+\nota{Los nombres de los campos en el CRM hablan de \emph{vespertina} y \emph{tarde}, pero en el calendario esos campos se tratan como el \textbf{turno de noche} (\code{GN} y \code{SMGN}). Además, en la búsqueda la guardia de noche se llama \code{gt}, mientras que en el envío se llama \code{GN}; el calendario hace esa equivalencia.}
+
+\subsection{Calendario del asesor (usuario que no es gerente)}
+
+\subsubsection{Estructura de la pantalla}
+La pantalla se divide en dos columnas:
+\begin{itemize}[nosep]
+  \item \textbf{Calendario} (aproximadamente 75\,\% del ancho): vista de mes con celdas amplias.
+  \item \textbf{Panel lateral} (aproximadamente 25\,\%): título con el nombre del asesor, la \emph{cantidad de guardias sugeridas}, el contador \emph{Guardias colocadas}, la leyenda de nombres e iniciales y el botón \emph{Enviar Selección}.
+\end{itemize}
+
+\subsubsection{Anatomía de cada día}
+Cada día se divide en dos triángulos por una diagonal. En sábados y domingos aparece además un botón central para la guardia intermedia.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[scale=0.8]
+  % Día entre semana
+  \begin{scope}
+    \fill[amarilloturno] (0,4) -- (4,4) -- (0,0) -- cycle;
+    \fill[nocturno] (4,4) -- (4,0) -- (0,0) -- cycle;
+    \draw[azul] (0,0) rectangle (4,4);
+    \node[font=\scriptsize,align=center] at (1.05,2.8) {Día\\\code{GD}\\\code{SMGD}};
+    \node[font=\scriptsize,align=center,color=white] at (2.95,1.2) {Noche\\\code{GN}\\\code{SMGN}};
+    \node[font=\footnotesize\bfseries,fill=white,inner sep=2pt] at (3.6,3.6) {15};
+    \node[font=\footnotesize,align=center] at (2,-0.7) {Día entre semana};
+  \end{scope}
+  % Fin de semana
+  \begin{scope}[xshift=6cm]
+    \fill[amarilloturno] (0,4) -- (4,4) -- (0,0) -- cycle;
+    \fill[nocturno] (4,4) -- (4,0) -- (0,0) -- cycle;
+    \draw[azul] (0,0) rectangle (4,4);
+    \node[font=\footnotesize,align=center] at (0.95,3.1) {Día};
+    \node[font=\footnotesize,align=center,color=white] at (3.05,0.9) {Noche};
+    \draw[fill=tinto,draw=white,rounded corners=4pt,thick] (1.2,1.2) rectangle (2.8,2.8);
+    \node[font=\scriptsize,align=center,color=white] at (2,2) {\code{GIT}\\\code{GITS}};
+    \node[font=\footnotesize\bfseries,fill=white,inner sep=2pt] at (3.6,3.6) {16};
+    \node[font=\footnotesize,align=center] at (2,-0.7) {Sábado o domingo};
+  \end{scope}
+\end{tikzpicture}
+\caption{Anatomía de una celda del calendario del asesor.}
+\end{figure}
+
+\subsubsection{Colores y estados}
+\begin{longtable}{@{}p{4.6cm}p{3.8cm}p{6.4cm}@{}}
+\toprule
+\textbf{Estado} & \textbf{Color} & \textbf{Significado} \\
+\midrule
+\endhead
+Día seleccionado & Amarillo (\code{\#F6DD91}) & Guardia de día colocada por el asesor. \\
+Noche seleccionada & Azul oscuro (\code{\#35405D}) & Guardia de noche colocada por el asesor. \\
+Intermedia seleccionada & Tinto (\code{\#800020}) & Guardia intermedia colocada por el asesor (fin de semana). \\
+Ocupado por otro asesor & Gris claro (\code{\#F1F5F9}) & Otro asesor ya tiene ese turno; \textbf{no se puede seleccionar}. \\
+Libre & Transparente & Disponible; al hacer clic se marca y al volver a hacer clic se desmarca. \\
+\bottomrule
+\end{longtable}
+
+En los turnos ocupados, y también en los propios, se muestra una etiqueta (\code{shift-badge-day}, \code{shift-badge-night}, \code{shift-badge-git}) con las \textbf{iniciales} o el nombre corto de quien tiene la guardia. Las iniciales se forman con el formato del script de visualización (por ejemplo, \code{Nombre Apellido.} o el primer nombre y la inicial de la segunda palabra, asegurando un formato uniforme). La leyenda del panel lateral lista nombres completos con sus nombres cortos generados dinámicamente mediante el procesamiento de cadenas del script actualizado.
+
+\subsubsection{Ventana de meses y días editables}
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}
+  \draw[fill=azulclaro,draw=azul] (0,0) rectangle (9,0.9);
+  \node[font=\footnotesize] at (4.5,0.45) {Mes en curso: todos los días};
+  \draw[fill=naranjaclaro,draw=naranja] (9,0) rectangle (11.4,0.9);
+  \node[font=\scriptsize,align=center] at (10.2,0.45) {Mes siguiente:\\días 1 a 5};
+  \draw[dashed,draw=gray] (11.4,0) rectangle (14.2,0.9);
+  \node[font=\tiny,align=center,color=gray] at (12.8,0.45) {Resto del\\mes siguiente\\(no editable)};
+  \node[font=\scriptsize,align=center] at (4.5,-0.55) {\code{GD}, \code{GN}, \code{GIT}};
+  \node[font=\scriptsize,align=center] at (10.2,-0.55) {\code{SMGD}, \code{SMGN}, \code{GITS}};
+\end{tikzpicture}
+\caption{Días del calendario en los que el asesor puede colocar guardias.}
+\end{figure}
+
+\begin{itemize}[nosep]
+  \item Solo se puede navegar entre el \textbf{mes en curso} y el \textbf{mes siguiente}: el botón de mes anterior se oculta en el mes en curso y el de mes siguiente se oculta al llegar al mes siguiente mediante la lógica actualizada en \code{datesSet}.
+  \item En el mes siguiente \textbf{solo son editables los días 1 al 5}; esos mismos días aparecen también al final de la cuadrícula del mes en curso. Los demás días del mes siguiente no se muestran como editables.
+  \item El mes en curso se determina con la fecha del equipo desde el que se abre la página.
+\end{itemize}
+
+\subsubsection{Reglas de selección}
+\begin{enumerate}[nosep]
+  \item Al cargar, las guardias que el asesor ya tiene registradas aparecen \textbf{preseleccionadas}. El sistema reconoce al asesor comparando su nombre completo con el de la búsqueda.
+  \item Las guardias de otros asesores aparecen en gris y bloqueadas.
+  \item Un clic sobre el triángulo de día, el de noche o el botón central alterna la selección.
+  \item El contador \emph{Guardias colocadas} suma todas las selecciones: día, noche, intermedias y las del mes siguiente.
+\end{enumerate}
+
+\aviso{La \emph{cantidad de guardias sugeridas} es únicamente el número que el asesor tiene como \textbf{guía} para decidir cuántas guardias colocar. La página \textbf{no limita ni valida} que el total colocado coincida con ese número. Tampoco bloquea los días ya pasados del mes en curso.}
+
+\subsubsection{Envío de la selección}
+Al presionar \emph{Enviar Selección}, la página arma un \emph{payload} y lo envía por \code{POST}. Cada campo es un texto con los \textbf{números de día ordenados de menor a mayor y separados por coma}. Si no hay selección en un campo, se envía una cadena vacía.
+
+\begin{lstlisting}[style=codigo,language=json]
+{
+  "id":   "64f1a2b3c4d5e6f7a8b9c0d1",
+  "GD":   "3,4,10,17",
+  "GN":   "5,12",
+  "SMGD": "1,2",
+  "SMGN": "",
+  "GIT":  "6,13",
+  "GITS": "3"
+}
+\end{lstlisting}
+
+\textbf{Retroalimentación al usuario:}
+\begin{longtable}{@{}p{4.4cm}p{10.4cm}@{}}
+\toprule
+\textbf{Situación} & \textbf{Qué se muestra} \\
+\midrule
+\endhead
+Enviando & El botón se deshabilita y muestra una ruedita de carga. \\
+Envío correcto & Marca \emph{¡Enviado!} durante unos 2.5 segundos y el botón vuelve a habilitarse. \\
+Respuesta con error & Aviso con el código de estado devuelto por el endpoint. \\
+Fallo de red & Aviso de error de red. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Endpoint de recepción}
+\begin{longtable}{@{}p{4.2cm}p{10.6cm}@{}}
+\toprule
+\textbf{Característica} & \textbf{Configuración} \\
+\midrule
+\endhead
+Dirección & {\small\url{https://portal.crm.walcu.com/endpoints/famous-rising-victory/endp-calendarioguardias-prueba}} \\
+Método & \code{POST} con cuerpo JSON \\
+Autenticación & Sin autenticación \\
+CORS & Habilitado, con orígenes permitidos \* (necesario porque la petición sale desde la página en el navegador) \\
+Cuerpo & Objeto con siete campos de tipo texto: \code{id}, \code{GD}, \code{GN}, \code{SMGD}, \code{SMGN}, \code{GIT} y \code{GITS} \\
+\bottomrule
+\end{longtable}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[node distance=0.4cm and 1.2cm,
+  hoja/.style={caja,fill=white,minimum width=2.6cm,align=left}]
+  \node[caja,fill=azul!15] (root) {ROOT\\\scriptsize object};
+  \node[hoja,right=1.4cm of root,yshift=2.4cm] (f1) {\code{id} \hfill \scriptsize string};
+  \node[hoja,below=0.2cm of f1] (f2) {\code{GD} \hfill \scriptsize string};
+  \node[hoja,below=0.2cm of f2] (f3) {\code{GN} \hfill \scriptsize string};
+  \node[hoja,below=0.2cm of f3] (f4) {\code{SMGD} \hfill \scriptsize string};
+  \node[hoja,below=0.2cm of f4] (f5) {\code{SMGN} \hfill \scriptsize string};
+  \node[hoja,below=0.2cm of f5] (f6) {\code{GIT} \hfill \scriptsize string};
+  \node[hoja,below=0.2cm of f6] (f7) {\code{GITS} \hfill \scriptsize string};
+  \foreach \n in {f1,f2,f3,f4,f5,f6,f7} { \draw[flecha] (root.east) -- (\n.west); }
+\end{tikzpicture}
+\caption{Cuerpo de la petición del endpoint del calendario.}
+\end{figure}
+
+\textbf{Funcionamiento.} El endpoint toma el \code{id} y localiza al usuario en Walcu con ese ID. Después, en cada campo de guardias \textbf{primero borra el contenido que había y luego escribe} el valor recibido. Los campos que se actualizan son: \code{GD} (guardias de día), \code{GN} (guardias de noche), \code{SMGD} y \code{SMGN} (día y noche del siguiente mes), \code{GIT} (intermedias de fin de semana) y \code{GITS} (intermedias de fin de semana del siguiente mes).
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[node distance=0.9cm and 1.2cm]
+  \node[salida] (rec) {Petición recibida\\\code{id}, \code{GD}, \code{GN},\\\code{SMGD}, \code{SMGN}, \code{GIT}, \code{GITS}};
+  \node[proceso,right=of rec] (bus) {Buscar usuario\\por \code{id}};
+  \node[errorc,right=of bus] (bor) {Borrar el valor\\actual de los\\campos de guardias};
+  \node[salida,right=of bor] (esc) {Escribir los\\valores recibidos};
+  \draw[flecha] (rec) -- (bus);
+  \draw[flecha] (bus) -- (bor);
+  \draw[flecha] (bor) -- (esc);
+\end{tikzpicture}
+\caption{Secuencia del endpoint del calendario: borrar y escribir.}
+\end{figure}
+
+Como la página envía siempre la \textbf{selección completa} de cada campo (el calendario carga primero las guardias que el asesor ya tenía), el valor enviado representa el estado final de ese campo para el usuario.
+
+\aviso{Al \textbf{reemplazar} el contenido, si un campo llega vacío (por ejemplo, el asesor desmarcó todas sus guardias de noche), el campo queda vacío en el CRM. Por la misma razón, una petición con una lista incompleta elimina las guardias que no incluya.}
+
+\subsection{Vista general (gerente o coordinador)}
+Cuando quien presiona el botón es gerente o coordinador, se muestra una página de \textbf{solo lectura} titulada \emph{Vista General de Guardias}. Usa la misma búsqueda \code{lpjgh}, pero con un diseño optimizado que incorpora el parseo dinámico mejorado de nombres cortos y los badges de turnos:
+
+\begin{itemize}[nosep]
+  \item Muestra \textbf{únicamente el mes en curso}, sin botones para cambiar de mes.
+  \item Cada día se divide en dos triángulos: \textbf{día} (fondo blanco, etiquetas amarillas \code{shift-badge-day}) y \textbf{noche} (fondo gris claro, etiquetas azul oscuro con texto blanco \code{shift-badge-night}).
+  \item Cada etiqueta lleva un \textbf{nombre corto automático}: se divide el nombre completo por espacios y se genera el formato de dos palabras (por ejemplo, \emph{Nombre I.}) mediante JavaScript en tiempo de ejecución.
+  \item Debajo del calendario, un contenedor de leyendas (\code{legendsContainer}) lista el \textbf{personal con su nombre completo y nombre corto} formateado de manera limpia.
+  \item Las celdas tienen una altura fija de \code{195px} para alojar adecuadamente múltiples badges de turnos concurrentes.
+  \item Se incluyen botones centrales flotantes en fines de semana para las guardias intermedias (`weekend-center-btn`) con su respectivo badge en tinto (`shift-badge-git`).
+  \item No hay selección, panel lateral ni envío: es estrictamente de consulta.
+\end{itemize}
+
+\subsection{Comparación entre las dos vistas}
+\begin{longtable}{@{}p{3.2cm}p{5.6cm}p{6cm}@{}}
+\toprule
+\textbf{Aspecto} & \textbf{Asesor (no gerente)} & \textbf{Gerente o coordinador} \\
+\midrule
+\endhead
+Objetivo & Colocar y enviar guardias propias & Consultar todas las guardias \\
+Modo & Interactivo & Solo lectura \\
+Meses mostrados & Mes en curso y siguiente (días 1 a 5) & Solo el mes en curso \\
+Campos que muestra & \code{gd}, \code{gt}, \code{smgd}, \code{smgn}, \code{GIT}, \code{GITS} & \code{gd}, \code{gt}, \code{git} (y \code{smgd}, \code{smgn}, \code{gits} en el mes siguiente) \\
+Intermedias (fin de semana) & Sí, con botón central & Sí, en fines de semana mediante \code{weekend-center-btn} \\
+Etiquetas & Iniciales / Badges interactivos & Badges estilizados de nombres cortos (\code{shortName}) \\
+Panel lateral & Sí (sugeridas, colocadas, leyenda, envío) & No; leyenda inferior automatizada (\code{legendsContainer}) \\
+Envío al CRM & \code{POST} al endpoint & Ninguno \\
+\bottomrule
+\end{longtable}
+
+\subsection{Guía de uso}
+\textbf{Para el asesor:}
+\begin{enumerate}[nosep]
+  \item Presionar el botón \emph{Calendario guardia} en el CRM.
+  \item Revisar la \emph{cantidad de guardias sugeridas} en el panel lateral.
+  \item Hacer clic en el triángulo de día o de noche de cada fecha deseada; en sábados y domingos, usar el botón central para la guardia intermedia.
+  \item Para las guardias de los primeros días del mes siguiente, avanzar al mes siguiente (o usar los últimos días de la cuadrícula del mes en curso).
+  \item Verificar el contador \emph{Guardias colocadas}.
+  \item Presionar \emph{Enviar Selección} y esperar la marca \emph{¡Enviado!}.
+\end{enumerate}
+
+\textbf{Para gerentes y coordinadores:} presionar el mismo botón; por su puesto en el CRM se abre la vista general del mes en curso con los nombres cortos actualizados y la distribución completa.
+
+\subsection{Solución de problemas del calendario}
+\begin{longtable}{@{}p{4.4cm}p{5cm}p{5.4cm}@{}}
+\toprule
+\textbf{Síntoma} & \textbf{Causa probable} & \textbf{Acción} \\
+\midrule
+\endhead
+Las guardias propias aparecen como ocupadas por otro & El nombre de la búsqueda no coincide con el nombre del usuario (acentos, espacios extra, segundo nombre). & Comparar nombre y apellidos en la ficha del usuario con el que genera la búsqueda. \\
+Calendario sin guardias ni leyenda & La búsqueda no devolvió usuarios o el bloque de texto está mal formado. & Revisar el filtro de centro, el filtro de cantidad sugerida y el separador (coma). \\
+Faltan asesores en el calendario & La búsqueda procesa hasta 100 elementos. & Aumentar el límite o filtrar mejor. \\
+No se puede seleccionar un turno & Otro asesor ya lo tiene. & Elegir otro turno o liberar el existente. \\
+Aviso de error con un código & El endpoint rechazó la petición. & Verificar la dirección y el cuerpo del endpoint. \\
+Aviso de error de red & Sin conexión o bloqueo del navegador. & Reintentar; verificar CORS del endpoint. \\
+No aparecen días del mes siguiente & Solo se muestran los días 1 al 5. & Es el comportamiento diseñado. \\
+Una persona ve la vista que no le corresponde & Su puesto en el CRM no es el esperado. & Revisar y corregir el puesto del usuario en el CRM. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Consideraciones y limitaciones}
+\begin{itemize}
+  \item \textbf{Solo cinco días del mes siguiente.} El código limita la edición de los campos \code{SMGD}, \code{SMGN} y \code{GITS} a los días 1 al 5.
+  \item \textbf{Ocupación calculada al abrir la página.} Los espacios ocupados se determinan con los datos cargados al abrir el calendario. Si two asesores tienen la página abierta al mismo tiempo, ambos pueden elegir el mismo turno; la página no verifica conflictos en el momento del envío.
+  \item \textbf{Reconocimiento por nombre.} El asesor se identifica comparando nombre completo; cualquier diferencia de escritura hace que el sistema no reconozca sus propias guardias.
+  \item \textbf{Límite de 100 usuarios.} La búsqueda procesa hasta 100 elementos; con más asesores con guardias sugeridas, algunos no se mostrarían.
+  \item \textbf{Cantidad sugerida no obligatoria.} No se valida que el total colocado coincida con la cantidad sugerida.
+  \item \textbf{Endpoint sin autenticación.} La dirección del endpoint contiene la palabra \emph{prueba}, pero el endpoint ya es funcional y es el que se utiliza. No requiere autenticación y tiene CORS abierto a cualquier origen, por lo que cualquier petición con un ID válido puede reemplazar las guardias de ese usuario.
+  \item \textbf{Reemplazo total de los campos.} Como el endpoint borra y luego escribe, no existe un historial de las selecciones anteriores del calendario: cada envío sustituye por completo a la anterior.
+  \item \textbf{Fecha del navegador.} El mes en curso se calcula con el reloj del equipo del usuario.
+  \item \textbf{Un centro por búsqueda.} Para otro centro basta con cambiar el filtro de centro en la búsqueda \code{lpjgh}; las páginas no tienen centro fijo.
+\end{itemize}
+
+%------------------------------------------------------------
+\section{Glosario}
+%------------------------------------------------------------
+
+\begin{description}[style=nextline]
+  \item[Guardia] Turno o asignación de atención que se reparte entre los asesores.
+  \item[Lead / visita] Registro de un cliente potencial atendido por un asesor.
+  \item[Venta válida] Lead con fecha de factura registrada.
+  \item[Porcentaje de cierre] Ventas entre visitas, por 100.
+  \item[Asesor nuevo] Usuario con antigüedad entre 31 y 90 días que cumple los filtros de la Búsqueda 2.
+  \item[Piso del 10\,\%] Valor mínimo de porcentaje de cierre usado como peso para asesores nuevos.
+  \item[GD / GN] Guardias de día y de noche del mes en curso.
+  \item[SMGD / SMGN] Guardias de día y de noche del siguiente mes.
+  \item[GIT / GITS] Guardias intermedias de fin de semana del mes en curso y del siguiente mes, respectivamente.
+  \item[Puesto] Cargo que tiene registrado cada usuario en el CRM; determina si al presionar \emph{Calendario guardia} se muestra la vista general o el calendario editable.
+  \item[Vista general] Pantalla de solo lectura del calendario de guardias para los puestos de gerente y coordinador.
+  \item[Centro] Sucursal o unidad de negocio cuyos asesores se evalúan; todo el automatismo se puede aplicar a cualquier centro cambiando su configuración.
+  \item[Historial trimestral] Registro, por trimestres y con un año de antigüedad, de los valores anteriores de visitas, ventas o porcentaje de cada usuario. Se alimenta solo cuando el valor cambia.
+  \item[Payload] Cuerpo de datos enviado al endpoint mediante \code{POST}.
+  \item[Método del mayor residuo] Técnica de redondeo que reparte las unidades sobrantes a quienes tienen mayor parte decimal.
+\end{description}
+
+\end{document}
