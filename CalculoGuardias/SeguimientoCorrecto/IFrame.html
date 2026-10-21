@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Centros y Agencias</title>
+
+
+
+    <style>
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+        }
+
+
+
+        body {
+
+            background-color: #f4f5f7;
+
+            color: #1e2029;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            padding: 40px 20px;
+
+        }
+
+
+
+        h1 {
+
+            font-size: 1.5rem;
+
+            font-weight: 700;
+
+            margin-bottom: 30px;
+
+            color: #2b2d42;
+
+            letter-spacing: -0.5px;
+
+            text-align: center;
+
+        }
+
+
+
+        .grid-container {
+
+            display: grid;
+
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+            gap: 16px;
+
+            width: 100%;
+
+            max-width: 1000px;
+
+        }
+
+
+
+        .btn-center {
+
+            background-color: #ffffff;
+
+            color: #800020;
+
+            border: 2px solid #800020;
+
+            padding: 16px 20px;
+
+            border-radius: 8px;
+
+            font-size: 0.95rem;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.2s ease;
+
+            text-align: center;
+
+            outline: none;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+        }
+
+
+
+        .btn-center:hover {
+
+            background-color: #800020;
+
+            color: #ffffff;
+
+            transform: translateY(-2px);
+
+            box-shadow: 0 4px 12px rgba(128, 0, 32, 0.25);
+
+        }
+
+
+
+        .btn-center:active {
+
+            transform: translateY(0);
+
+            background-color: #600018;
+
+            border-color: #600018;
+
+        }
+
+
+
+        .btn-center:disabled {
+
+            opacity: 0.6;
+
+            cursor: not-allowed;
+
+        }
+
+
+
+        @media (max-width: 480px) {
+
+            .grid-container {
+
+                grid-template-columns: 1fr;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+
+<body>
+
+
+
+    <h1>Selecciona un Centro</h1>
+
+
+
+    <div class="grid-container" id="centrosContainer"></div>
+
+
+
+    <script>
+
+        const API_URL_DEFAULT = "https://portal.crm.walcu.com/endpoints/famous-rising-victory/seguimientocorrecto-get";
+
+
+
+        const centrosConfig = {
+
+            "BYD Culiacan": "685d6459d48b46a1328a3c35",
+
+            "BYD Mexicali": "69bb6c33177dd5a1550ace0a",
+
+            "BYD Mochis": "69bb75f3bb477d318b0359ca",
+
+            "BYD Tijuana Zona Rio": {
+
+                id: "69bae3434fce53e6645607ad",
+
+                url: "https://portal.crm.walcu.com/endpoints/famous-rising-victory/seguimientocorrecto-byd-tijuana-zr"
+
+            },
+
+            "BYD Tijuana Via Rapida": {
+
+                id: "69bb27fee8772bec548c2f4c",
+
+                url: "https://portal.crm.walcu.com/endpoints/famous-rising-victory/seguimientocorrecto-byd-tijuana-vr"
+
+            },
+
+            "BYD Ensenada": "6a4c37124259ac56edcb5844",
+
+            "Chevrolet Culiacan": "685d71c5d19224686d2a16c1",
+
+            "Chevrolet Hermosillo": "695869a1b5a2fb2293ebe041",
+
+            "Chevrolet Mazatlan": "69582d0a23d2dcd83ae538a2",
+
+            "Hino Culiacan": "69853598ce0e3bbe151e9848",
+
+            "Hino Tijuana": "69853607a74cfd689a11795f",
+
+            "Hyundai Culiacan": "698d0902480b96e3ab0a9658",
+
+            "Hyundai Mochis": "698d0902480b96e3ab0a9658",
+
+            "Hyundai Mazatlan": "69853a26051ec63e71aae1f8",
+
+            "Hyundai Mexicali": "6986331affb9bf7f603fb62c",
+
+            "Hyundai Tijuana": "698a85bf2c97ff2fd6f91c39",
+
+            "Hyundai Los Cabos": "69aee91115670ab6e8122432",
+
+            "JAC Culiacan": "6a10b88998e85f6b26ef66e9",
+
+            "JAC Mochis": "6a10b88998e85f6b26ef66e9",
+
+            "Stellantis Culiacan": "69bef8ab5f4943a34e470747",
+
+            "Stellantis Mochis": "6a2c9d7c26f52f40fe9457ae",
+
+            "Toyota Guasave": "6a1dabfd70ca3f4975d68f11",
+
+            "Toyota Mochis": "6a14d44bbce599eb41576526",
+
+            "Toyota Culiacan": "6a14d44bbce599eb41576526"
+
+        };
+
+
+
+        const container = document.getElementById("centrosContainer");
+
+
+
+        async function hacerPeticion(url, id) {
+
+            const response = await fetch(url, {
+
+                method: "POST",
+
+                headers: { 
+
+                    "Content-Type": "application/json" 
+
+                },
+
+                body: JSON.stringify({ id: id })
+
+            });
+
+
+
+            if (!response.ok) {
+
+                throw new Error(`Error HTTP ${response.status}`);
+
+            }
+
+
+
+            return response.json();
+
+        }
+
+
+
+        async function manejarEnvio(nombreCentro, config, button) {
+
+            button.disabled = true;
+
+            const originalText = button.textContent;
+
+            
+
+            let idDestino = config;
+
+            let urlDestino = API_URL_DEFAULT;
+
+
+
+            if (typeof config === 'object' && config !== null) {
+
+                idDestino = config.id;
+
+                urlDestino = config.url;
+
+            }
+
+
+
+            button.textContent = "Enviando...";
+
+
+
+            try {
+
+                const resultado = await hacerPeticion(urlDestino, idDestino);
+
+                
+
+                console.log(`Respuesta de la API para ${nombreCentro}:`, resultado);
+
+                alert(`¡Éxito! Se envió correctamente para: ${nombreCentro}`);
+
+            } catch (error) {
+
+                console.error("Error al procesar la petición:", error);
+
+                alert(`Error en la petición de ${nombreCentro}: ` + error.message);
+
+            } finally {
+
+                button.disabled = false;
+
+                button.textContent = originalText;
+
+            }
+
+        }
+
+
+
+        Object.entries(centrosConfig).forEach(([nombre, config]) => {
+
+            const button = document.createElement("button");
+
+            button.className = "btn-center";
+
+            button.textContent = nombre;
+
+
+
+            button.addEventListener("click", () => manejarEnvio(nombre, config, button));
+
+
+
+            container.appendChild(button);
+
+        });
+
+    </script>
+
+
+
+</body>
+
+
+
+</html>
