@@ -1,463 +1,1061 @@
 <!doctype html>
+
 <html lang="es">
+
   <head>
+
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Mis Guardias Asignadas</title>
+
     <link
+
       href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+
       rel="stylesheet"
+
     />
+
     <style>
+
       :root {
+
         --bg-color: #f4f4f6;
+
         --card-bg: #ffffff;
+
         --text-main: #0f172a;
+
         --text-muted: #64748b;
+
         --border-subtle: #e2e8f0;
+
         
+
         --morning-bg: #fef08a;
+
         --morning-text: #713f12;
+
         --evening-bg: #0284c7;
+
         --evening-text: #ffffff;
+
         --intermediate-bg: #fee2e2;
+
         --intermediate-text: #991b1b;
+
       }
+
+
 
       * {
+
         box-sizing: border-box;
+
       }
+
+
 
       body {
+
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
         background-color: var(--bg-color);
+
         color: var(--text-main);
+
         margin: 0;
+
         padding: 20px;
+
         display: flex;
+
         justify-content: center;
+
         align-items: center;
+
         min-height: 100vh;
+
       }
+
+
 
       .main-container {
+
         width: 100%;
+
         max-width: 100%;
+
         height: calc(100vh - 40px);
+
         display: flex;
+
         gap: 24px;
+
         align-items: stretch;
+
       }
+
+
 
       /* Columna Izquierda: Calendario */
+
       .calendar-column {
+
         flex: 4;
+
         background: var(--card-bg);
+
         padding: 28px;
+
         border-radius: 20px;
+
         box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+
         border: 1px solid rgba(226, 232, 240, 0.8);
+
         display: flex;
+
         flex-direction: column;
+
       }
+
+
 
       /* Columna Derecha: Panel Lateral */
+
       .sidebar-column {
+
         flex: 1.2;
+
         background: var(--card-bg);
+
         padding: 28px;
+
         border-radius: 20px;
+
         box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+
         border: 1px solid rgba(226, 232, 240, 0.8);
+
         display: flex;
+
         flex-direction: column;
+
         justify-content: space-between;
+
       }
+
+
 
       .sidebar-top {
+
         overflow-y: auto;
+
         padding-right: 4px;
+
         max-height: calc(100vh - 120px);
+
       }
+
+
 
       .sidebar-top::-webkit-scrollbar {
+
         width: 5px;
+
       }
+
       .sidebar-top::-webkit-scrollbar-thumb {
+
         background: var(--border-subtle);
+
         border-radius: 10px;
+
       }
+
+
 
       #header-title {
+
         font-size: 1.25rem;
+
         font-weight: 700;
+
         letter-spacing: -0.02em;
+
         color: var(--text-main);
+
         margin-bottom: 6px;
+
       }
+
+
 
       #header-subtitle {
+
         color: var(--text-muted);
+
         font-size: 0.85rem;
+
         font-weight: 400;
+
         margin-bottom: 24px;
+
         line-height: 1.5;
+
       }
+
+
 
       .section-title {
+
         font-size: 0.7rem;
+
         font-weight: 700;
+
         color: var(--text-muted);
+
         text-transform: uppercase;
+
         letter-spacing: 0.08em;
+
         margin-bottom: 12px;
+
+        margin-top: 16px;
+
       }
+
+
 
       .shift-list {
+
         display: flex;
+
         flex-direction: column;
+
         gap: 10px;
+
       }
+
+
 
       .shift-card {
+
         display: flex;
+
         justify-content: space-between;
+
         align-items: center;
+
         padding: 12px 16px;
+
         border-radius: 12px;
+
         font-size: 0.88rem;
+
         font-weight: 500;
+
         transition: transform 0.2s ease, box-shadow 0.2s ease;
+
       }
+
+
 
       .shift-card:hover {
+
         transform: translateY(-2px);
+
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+
       }
+
+
 
       .shift-card.morning {
+
         background-color: var(--morning-bg);
+
         color: var(--morning-text);
+
       }
+
+
 
       .shift-card.evening {
+
         background-color: var(--evening-bg);
+
         color: var(--evening-text);
+
       }
+
+
 
       .shift-card.intermediate {
+
         background-color: var(--intermediate-bg);
+
         color: var(--intermediate-text);
+
       }
+
+
 
       .shift-date {
+
         font-weight: 600;
+
       }
+
+
 
       .shift-badge-type {
+
         display: flex;
+
         align-items: center;
+
         gap: 6px;
+
         font-size: 0.72rem;
+
         font-weight: 700;
+
         padding: 3px 8px;
+
         border-radius: 6px;
+
         background: rgba(255, 255, 255, 0.2);
+
         letter-spacing: 0.02em;
+
       }
+
+
 
       .shift-card.morning .shift-badge-type {
+
         background: rgba(255, 255, 255, 0.5);
+
       }
+
+
 
       .empty-state {
+
         color: var(--text-muted);
+
         font-size: 0.85rem;
+
         font-style: italic;
+
         padding: 12px 0;
+
       }
+
+
 
       /* Estilos FullCalendar */
+
       #calendar {
+
         width: 100%;
+
         height: 100%;
+
         display: flex;
+
         flex-direction: column;
+
       }
+
+
 
       .fc {
+
         --fc-border-color: var(--border-subtle);
+
         --fc-button-bg-color: transparent;
+
         --fc-button-border-color: transparent;
+
         --fc-button-text-color: var(--text-main);
+
         --fc-today-bg-color: rgba(15, 23, 42, 0.02);
+
         font-size: 0.9rem;
+
         flex-grow: 1;
+
         display: flex;
+
         flex-direction: column;
+
       }
+
+
 
       .fc .fc-view-harness {
+
         flex-grow: 1;
+
       }
+
+
 
       .fc-toolbar-title {
+
         font-size: 1.25rem !important;
+
         font-weight: 700;
+
         color: var(--text-main);
+
         text-transform: capitalize;
+
         letter-spacing: -0.02em;
+
       }
 
-      .fc-prev-button, .fc-next-button {
-        display: none !important;
-      }
+
 
       .fc-col-header-cell-cushion {
+
         font-weight: 600;
+
         color: var(--text-muted);
+
         text-transform: uppercase;
+
         font-size: 0.72rem;
+
         letter-spacing: 0.06em;
+
         padding-bottom: 14px !important;
+
       }
+
+
 
       .fc-daygrid-day {
+
         height: auto !important;
+
       }
+
+
 
       .fc-daygrid-body, .fc-scrollgrid-sync-table {
+
         height: 100% !important;
+
       }
+
+
 
       .fc-daygrid-day-frame {
+
         position: relative;
+
         height: 100%;
+
         display: flex;
+
         flex-direction: column;
+
         min-height: 110px;
+
         overflow: hidden;
+
         border-radius: 8px;
+
       }
+
+
 
       /* Recuadro flotante elegante para el número del día */
+
       .fc-daygrid-day-top {
+
         position: absolute !important;
+
         top: 8px;
+
         right: 8px;
+
         z-index: 5 !important;
+
         display: flex;
+
         flex-direction: row !important;
+
         justify-content: center;
+
         align-items: center;
+
         background: rgba(255, 255, 255, 0.9);
+
         border: 1px solid rgba(226, 232, 240, 0.8);
+
         padding: 2px 7px;
+
         border-radius: 6px;
+
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+
         pointer-events: none;
+
       }
+
+
 
       .fc-daygrid-day-number {
+
         font-size: 0.82rem;
+
         font-weight: 700;
+
         color: var(--text-main);
+
       }
+
+
+
+      .fc-day-other .fc-daygrid-day-number {
+
+        opacity: 0.25;
+
+      }
+
+
 
       .split-day-container {
+
         position: absolute;
+
         top: 0;
+
         left: 0;
+
         width: 100%;
+
         height: 100%;
+
         display: flex;
+
         z-index: 1;
+
       }
+
+
 
       .half-triangle.day-shift {
+
         position: absolute;
+
         top: 0;
+
         left: 0;
+
         width: 100%;
+
         height: 100%;
+
         clip-path: polygon(0 0, 100% 0, 0 100%);
+
       }
+
+
 
       .half-triangle.day-shift.active-user {
+
         background-color: #facc15 !important;
+
       }
+
+
 
       .half-triangle.night-shift {
+
         position: absolute;
+
         top: 0;
+
         left: 0;
+
         width: 100%;
+
         height: 100%;
+
         clip-path: polygon(100% 0, 100% 100%, 0 100%);
+
       }
+
+
 
       .half-triangle.night-shift.active-user {
+
         background-color: #0369a1 !important;
+
       }
+
+
 
       .weekend-center-square {
+
         position: absolute;
+
         top: 50%;
+
         left: 50%;
+
         transform: translate(-50%, -50%);
+
         z-index: 4;
+
         width: 30px;
+
         height: 30px;
+
         background-color: #dc2626;
+
         border-radius: 8px;
+
         box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+
       }
+
+
 
       @media (max-width: 900px) {
+
         .main-container {
+
           flex-direction: column;
+
           height: auto;
+
         }
+
         body {
+
           height: auto;
+
           padding: 15px;
+
         }
+
         .sidebar-column {
+
           max-height: none;
+
         }
+
       }
+
     </style>
+
   </head>
+
   <body>
+
     <div class="main-container">
+
       <!-- Columna Izquierda: Calendario -->
+
       <div class="calendar-column">
+
         <div id="calendar"></div>
+
       </div>
+
+
 
       <!-- Columna Derecha: Panel Lateral -->
+
       <div class="sidebar-column">
+
         <div class="sidebar-top">
+
           <div id="header-title">Panel de Turnos</div>
-          <div id="header-subtitle">Tus guardias programadas para el mes en curso.</div>
+
+          <div id="header-subtitle">Tus guardias programadas (Mes actual y primeros 5 días del siguiente mes).</div>
+
           
-          <div class="section-title">Días Asignados</div>
-          <div class="shift-list" id="shiftListContainer"></div>
+
+          <div class="section-title">Mes Actual</div>
+
+          <div class="shift-list" id="currentMonthList"></div>
+
+
+
+          <div class="section-title">Próximo Mes (Primeros 5 días)</div>
+
+          <div class="shift-list" id="nextMonthList"></div>
+
         </div>
+
       </div>
+
     </div>
 
+
+
     <!-- FullCalendar JS -->
+
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
     <script>
+
       document.addEventListener("DOMContentLoaded", function () {
+
+        // Variables del mes actual
+
         const strMatutina = "{{1.pressing_user.guardia_matutina}}".trim();
+
         const strVespertina = "{{1.pressing_user.guardia_vespertina}}".trim();
+
         const strIntermedia = "{{1.pressing_user.guardia_intermedia}}".trim();
 
+
+
+        // Variables del próximo mes (primeros 5 días)
+
+        const strNextMatutina = "{{1.pressing_user.g_sm_day}}".trim();
+
+        const strNextVespertina = "{{1.pressing_user.g_sm_tarde}}".trim();
+
+        const strNextIntermedia = "{{1.pressing_user.guardia_itsm}}".trim();
+
+
+
         const parseDays = (str) => {
+
           if (!str || str.includes("{{")) return [];
+
           return str.split(",").map(d => d.trim()).filter(Boolean);
+
         };
 
+
+
         const morningDays = parseDays(strMatutina);
+
         const eveningDays = parseDays(strVespertina);
+
         const intermediateDays = parseDays(strIntermedia);
 
-        const shiftListContainer = document.getElementById("shiftListContainer");
-        let allShifts = [];
 
-        morningDays.forEach(day => allShifts.push({ day: Number(day), type: 'Matutina', category: 'morning' }));
-        eveningDays.forEach(day => allShifts.push({ day: Number(day), type: 'Vespertina', category: 'evening' }));
-        intermediateDays.forEach(day => allShifts.push({ day: Number(day), type: 'Intermedia', category: 'intermediate' }));
 
-        allShifts.sort((a, b) => a.day - b.day);
+        const nextMorningDays = parseDays(strNextMatutina);
 
-        if (allShifts.length === 0) {
-          shiftListContainer.innerHTML = `<div class="empty-state">No tienes guardias asignadas este mes.</div>`;
+        const nextEveningDays = parseDays(strNextVespertina);
+
+        const nextIntermediateDays = parseDays(strNextIntermedia);
+
+
+
+        const renderIcon = (category) => {
+
+          if (category === 'morning') {
+
+            return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
+
+          } else if (category === 'evening') {
+
+            return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>`;
+
+          } else {
+
+            return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect></svg>`;
+
+          }
+
+        };
+
+
+
+        // Renderizar lista del mes actual
+
+        const currentListContainer = document.getElementById("currentMonthList");
+
+        let currentShifts = [];
+
+        morningDays.forEach(day => currentShifts.push({ day: Number(day), type: 'Matutina', category: 'morning' }));
+
+        eveningDays.forEach(day => currentShifts.push({ day: Number(day), type: 'Vespertina', category: 'evening' }));
+
+        intermediateDays.forEach(day => currentShifts.push({ day: Number(day), type: 'Intermedia', category: 'intermediate' }));
+
+        currentShifts.sort((a, b) => a.day - b.day);
+
+
+
+        if (currentShifts.length === 0) {
+
+          currentListContainer.innerHTML = `<div class="empty-state">No hay guardias este mes.</div>`;
+
         } else {
-          shiftListContainer.innerHTML = "";
-          allShifts.forEach(shift => {
-            const card = document.createElement("div");
-            card.className = `shift-card ${shift.category}`;
-            
-            let iconSvg = '';
-            if (shift.category === 'morning') {
-              iconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
-            } else if (shift.category === 'evening') {
-              iconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>`;
-            } else {
-              iconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"></rect></svg>`;
-            }
 
-            card.innerHTML = `
-              <div>
-                <span class="shift-date">Día ${shift.day}</span>
-              </div>
-              <span class="shift-badge-type">${iconSvg} ${shift.type}</span>
-            `;
-            shiftListContainer.appendChild(card);
+          currentListContainer.innerHTML = "";
+
+          currentShifts.forEach(shift => {
+
+            const card = document.createElement("div");
+
+            card.className = `shift-card ${shift.category}`;
+
+            card.innerHTML = `<div><span class="shift-date">Día ${shift.day}</span></div><span class="shift-badge-type">${renderIcon(shift.category)} ${shift.type}</span>`;
+
+            currentListContainer.appendChild(card);
+
           });
+
         }
 
+
+
+        // Renderizar lista del próximo mes (primeros 5 días)
+
+        const nextListContainer = document.getElementById("nextMonthList");
+
+        let nextShifts = [];
+
+        nextMorningDays.forEach(day => nextShifts.push({ day: Number(day), type: 'Matutina', category: 'morning' }));
+
+        nextEveningDays.forEach(day => nextShifts.push({ day: Number(day), type: 'Vespertina', category: 'evening' }));
+
+        nextIntermediateDays.forEach(day => nextShifts.push({ day: Number(day), type: 'Intermedia', category: 'intermediate' }));
+
+        nextShifts.sort((a, b) => a.day - b.day);
+
+
+
+        if (nextShifts.length === 0) {
+
+          nextListContainer.innerHTML = `<div class="empty-state">No hay guardias en los primeros 5 días.</div>`;
+
+        } else {
+
+          nextListContainer.innerHTML = "";
+
+          nextShifts.forEach(shift => {
+
+            const card = document.createElement("div");
+
+            card.className = `shift-card ${shift.category}`;
+
+            card.innerHTML = `<div><span class="shift-date">Día ${shift.day}</span></div><span class="shift-badge-type">${renderIcon(shift.category)} ${shift.type}</span>`;
+
+            nextListContainer.appendChild(card);
+
+          });
+
+        }
+
+
+
         const calendarEl = document.getElementById("calendar");
+
         const now = new Date();
+
         const currentMonthIndex = now.getMonth();
+
         const currentYear = now.getFullYear();
 
+
+
+        let nextMonthIndex = currentMonthIndex + 1;
+
+        let nextMonthYear = currentYear;
+
+        if (nextMonthIndex > 11) {
+
+          nextMonthIndex = 0;
+
+          nextMonthYear += 1;
+
+        }
+
+
+
         const calendar = new FullCalendar.Calendar(calendarEl, {
+
           initialView: "dayGridMonth",
+
           locale: "es",
+
           headerToolbar: { 
+
             left: "title", 
+
             center: "", 
-            right: "" 
+
+            right: "prev,next" 
+
           },
+
           fixedWeekCount: false,
+
           height: "100%",
+
+          datesSet: function (info) {
+
+            // Control estricto para mostrar u ocultar los botones de navegación según el mes visible
+
+            const visibleDate = calendar.getDate();
+
+            const vMonth = visibleDate.getMonth();
+
+            const vYear = visibleDate.getFullYear();
+
+
+
+            const prevButton = calendarEl.querySelector(".fc-prev-button");
+
+            const nextButton = calendarEl.querySelector(".fc-next-button");
+
+
+
+            if (prevButton && nextButton) {
+
+              if (vMonth === currentMonthIndex && vYear === currentYear) {
+
+                // Estamos en el mes actual -> Ocultar "anterior", mostrar "siguiente"
+
+                prevButton.style.display = "none";
+
+                nextButton.style.display = "inline-block";
+
+              } else if (vMonth === nextMonthIndex && vYear === nextMonthYear) {
+
+                // Estamos en el mes siguiente -> Mostrar "anterior" (para volver al normal), ocultar "siguiente"
+
+                prevButton.style.display = "inline-block";
+
+                nextButton.style.display = "none";
+
+              }
+
+            }
+
+          },
+
           dayCellDidMount: function (info) {
+
             const frame = info.el.querySelector(".fc-daygrid-day-frame");
+
             if (frame) {
+
               const cellDate = info.date;
+
               const cellMonth = cellDate.getMonth();
+
               const cellYear = cellDate.getFullYear();
-              const dayNumStr = cellDate.getDate().toString();
+
+              const dayNum = cellDate.getDate();
+
+              const dayNumStr = dayNum.toString();
+
               const dayOfWeek = cellDate.getDay();
 
-              if (cellMonth !== currentMonthIndex || cellYear !== currentYear) return;
+
+
+              const isCurrentMonth = (cellMonth === currentMonthIndex && cellYear === currentYear);
+
+              const isNextMonthFirstDays = (cellMonth === nextMonthIndex && cellYear === nextMonthYear && dayNum <= 5);
+
+
+
+              if (!isCurrentMonth && !isNextMonthFirstDays) return;
+
+
 
               const container = document.createElement("div");
+
               container.className = "split-day-container";
 
+
+
               const dayPart = document.createElement("div");
+
               dayPart.className = "half-triangle day-shift";
 
+
+
               const nightPart = document.createElement("div");
+
               nightPart.className = "half-triangle night-shift";
 
-              if (morningDays.includes(dayNumStr)) {
-                dayPart.classList.add("active-user");
+
+
+              if (isCurrentMonth) {
+
+                if (morningDays.includes(dayNumStr)) dayPart.classList.add("active-user");
+
+                if (eveningDays.includes(dayNumStr)) nightPart.classList.add("active-user");
+
+              } else if (isNextMonthFirstDays) {
+
+                if (nextMorningDays.includes(dayNumStr)) dayPart.classList.add("active-user");
+
+                if (nextEveningDays.includes(dayNumStr)) nightPart.classList.add("active-user");
+
               }
-              if (eveningDays.includes(dayNumStr)) {
-                nightPart.classList.add("active-user");
-              }
+
+
 
               container.appendChild(dayPart);
+
               container.appendChild(nightPart);
 
-              if ((dayOfWeek === 0 || dayOfWeek === 6) && intermediateDays.includes(dayNumStr)) {
-                const intermediateSquare = document.createElement("div");
-                intermediateSquare.className = "weekend-center-square";
-                container.appendChild(intermediateSquare);
+
+
+              // Guardias intermedias en fin de semana
+
+              if (dayOfWeek === 0 || dayOfWeek === 6) {
+
+                if (isCurrentMonth && intermediateDays.includes(dayNumStr)) {
+
+                  const square = document.createElement("div");
+
+                  square.className = "weekend-center-square";
+
+                  container.appendChild(square);
+
+                } else if (isNextMonthFirstDays && nextIntermediateDays.includes(dayNumStr)) {
+
+                  const square = document.createElement("div");
+
+                  square.className = "weekend-center-square";
+
+                  container.appendChild(square);
+
+                }
+
               }
 
+
+
               frame.insertBefore(container, frame.firstChild);
+
             }
+
           },
+
         });
 
+
+
         calendar.render();
+
       });
+
     </script>
+
   </body>
+
 </html>
