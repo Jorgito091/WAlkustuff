@@ -1,0 +1,860 @@
+<!doctype html>
+
+<html lang="es">
+
+  <head>
+
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Mis Guardias Asignadas</title>
+
+    <link
+
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+
+      rel="stylesheet"
+
+    />
+
+    <style>
+
+      :root {
+
+        --bg-color: #fbfbfd;
+
+        --card-bg: #ffffff;
+
+        --text-primary: #1d1d1f;
+
+        --text-secondary: #86868b;
+
+        --border-color: #d2d2d7;
+
+        --morning-color: #fef3c7;
+
+        --morning-text: #92400e;
+
+        --evening-color: #e0f2fe;
+
+        --evening-text: #0369a1;
+
+        --intermediate-color: #fee2e2;
+
+        --intermediate-text: #991b1b;
+
+      }
+
+
+
+      body {
+
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+        background-color: var(--bg-color);
+
+        color: var(--text-primary);
+
+        margin: 0;
+
+        padding: 15px 20px;
+
+        box-sizing: border-box;
+
+        display: flex;
+
+        justify-content: center;
+
+        align-items: center;
+
+        min-height: 100vh;
+
+      }
+
+
+
+      .main-container {
+
+        width: 100%;
+
+        max-width: 100%;
+
+        height: calc(100vh - 30px);
+
+        display: flex;
+
+        gap: 20px;
+
+        box-sizing: border-box;
+
+        align-items: stretch;
+
+      }
+
+
+
+      /* Columna Izquierda: Calendario */
+
+      .calendar-column {
+
+        flex: 4;
+
+        background: var(--card-bg);
+
+        padding: 20px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+
+        border: 1px solid rgba(0, 0, 0, 0.04);
+
+        display: flex;
+
+        flex-direction: column;
+
+      }
+
+
+
+      /* Columna Derecha: Panel Lateral */
+
+      .sidebar-column {
+
+        flex: 1.2;
+
+        background: var(--card-bg);
+
+        padding: 24px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+
+        border: 1px solid rgba(0, 0, 0, 0.04);
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: space-between;
+
+      }
+
+
+
+      .sidebar-top {
+
+        overflow-y: auto;
+
+        padding-right: 4px;
+
+        max-height: calc(100vh - 120px);
+
+      }
+
+
+
+      .sidebar-top::-webkit-scrollbar {
+
+        width: 4px;
+
+      }
+
+      .sidebar-top::-webkit-scrollbar-thumb {
+
+        background: var(--border-color);
+
+        border-radius: 4px;
+
+      }
+
+
+
+      #header-title {
+
+        color: var(--text-primary);
+
+        font-size: 1.4rem;
+
+        font-weight: 700;
+
+        letter-spacing: -0.02em;
+
+        margin-bottom: 4px;
+
+      }
+
+
+
+      #header-subtitle {
+
+        color: var(--text-secondary);
+
+        font-size: 0.85rem;
+
+        font-weight: 500;
+
+        margin-bottom: 20px;
+
+        line-height: 1.4;
+
+      }
+
+
+
+      .section-title {
+
+        font-size: 0.75rem;
+
+        font-weight: 700;
+
+        color: var(--text-secondary);
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.05em;
+
+        margin-bottom: 10px;
+
+        margin-top: 10px;
+
+      }
+
+
+
+      .shift-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 10px;
+
+      }
+
+
+
+      .shift-card {
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: center;
+
+        padding: 12px 16px;
+
+        border-radius: 10px;
+
+        font-size: 0.9rem;
+
+        font-weight: 500;
+
+      }
+
+
+
+      .shift-card.morning {
+
+        background-color: var(--morning-color);
+
+        color: var(--morning-text);
+
+      }
+
+
+
+      .shift-card.evening {
+
+        background-color: var(--evening-color);
+
+        color: var(--evening-text);
+
+      }
+
+
+
+      .shift-card.intermediate {
+
+        background-color: var(--intermediate-color);
+
+        color: var(--intermediate-text);
+
+      }
+
+
+
+      .shift-date {
+
+        font-weight: 600;
+
+      }
+
+
+
+      .shift-badge-type {
+
+        font-size: 0.75rem;
+
+        font-weight: 700;
+
+        padding: 3px 8px;
+
+        border-radius: 6px;
+
+        background: rgba(255, 255, 255, 0.6);
+
+      }
+
+
+
+      .empty-state {
+
+        color: var(--text-secondary);
+
+        font-size: 0.85rem;
+
+        font-style: italic;
+
+        padding: 10px 0;
+
+      }
+
+
+
+      
+
+      #calendar {
+
+        width: 100%;
+
+        height: 100%;
+
+        display: flex;
+
+        flex-direction: column;
+
+      }
+
+
+
+      .fc {
+
+        --fc-border-color: #f0f0f2;
+
+        --fc-button-bg-color: transparent;
+
+        --fc-button-border-color: transparent;
+
+        --fc-button-text-color: var(--text-primary);
+
+        --fc-today-bg-color: rgba(0, 113, 227, 0.05);
+
+        font-size: 0.9rem;
+
+        flex-grow: 1;
+
+        display: flex;
+
+        flex-direction: column;
+
+      }
+
+
+
+      .fc .fc-view-harness {
+
+        flex-grow: 1;
+
+      }
+
+
+
+      .fc-toolbar-title {
+
+        font-size: 1.25rem !important;
+
+        font-weight: 700;
+
+        color: var(--text-primary);
+
+        text-transform: capitalize;
+
+      }
+
+
+
+      .fc-prev-button, .fc-next-button {
+
+        display: none !important;
+
+      }
+
+
+
+      .fc-col-header-cell-cushion {
+
+        font-weight: 600;
+
+        color: var(--text-secondary);
+
+        text-transform: uppercase;
+
+        font-size: 0.75rem;
+
+        letter-spacing: 0.05em;
+
+        padding-bottom: 12px !important;
+
+      }
+
+
+
+      .fc-daygrid-day {
+
+        height: auto !important;
+
+      }
+
+
+
+      .fc-daygrid-body, .fc-scrollgrid-sync-table {
+
+        height: 100% !important;
+
+      }
+
+
+
+      .fc-daygrid-day-frame {
+
+        position: relative;
+
+        height: 100%;
+
+        display: flex;
+
+        flex-direction: column;
+
+        min-height: 110px;
+
+      }
+
+
+
+      .fc-daygrid-day-top {
+
+        flex-direction: row !important;
+
+        justify-content: flex-end;
+
+        padding: 6px 8px;
+
+        z-index: 3;
+
+        pointer-events: none;
+
+      }
+
+
+
+      .fc-daygrid-day-number {
+
+        font-size: 0.85rem;
+
+        font-weight: 600;
+
+        color: var(--text-primary);
+
+      }
+
+
+
+      .split-day-container {
+
+        position: absolute;
+
+        top: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        display: flex;
+
+        z-index: 1;
+
+        overflow: hidden;
+
+        border-radius: 6px;
+
+      }
+
+
+
+      .half-triangle.day-shift {
+
+        position: absolute;
+
+        top: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+
+      }
+
+
+
+      .half-triangle.day-shift.active-user {
+
+        background-color: #fef08a !important;
+
+      }
+
+
+
+      .half-triangle.night-shift {
+
+        position: absolute;
+
+        top: 0;
+
+        left: 0;
+
+        width: 100%;
+
+        height: 100%;
+
+        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+
+      }
+
+
+
+      .half-triangle.night-shift.active-user {
+
+        background-color: #bae6fd !important;
+
+      }
+
+
+
+     
+
+      .weekend-center-square {
+
+        position: absolute;
+
+        top: 50%;
+
+        left: 50%;
+
+        transform: translate(-50%, -50%);
+
+        z-index: 4;
+
+        width: 32px;
+
+        height: 32px;
+
+        background-color: #ef4444;
+
+        border-radius: 6px;
+
+        box-shadow: 0 3px 6px rgba(239, 68, 68, 0.3);
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        color: #ffffff;
+
+        font-size: 0.65rem;
+
+        font-weight: 700;
+
+      }
+
+
+
+      @media (max-width: 900px) {
+
+        .main-container {
+
+          flex-direction: column;
+
+          height: auto;
+
+        }
+
+        .sidebar-column {
+
+          max-height: none;
+
+        }
+
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <div class="main-container">
+
+
+      <div class="calendar-column">
+
+        <div id="calendar"></div>
+
+      </div>
+
+
+
+
+
+      <div class="sidebar-column">
+
+        <div class="sidebar-top">
+
+          
+
+          <div id="header-subtitle">Tus turnos programados para este mes</div>
+
+          
+
+          <div class="section-title">Días Asignados</div>
+
+          <div class="shift-list" id="shiftListContainer"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+  
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <script>
+
+      document.addEventListener("DOMContentLoaded", function () {
+
+        const strMatutina = "{{1.pressing_user.guardia_matutina}}".trim();
+
+        const strVespertina = "{{1.pressing_user.guardia_vespertina}}".trim();
+
+        const strIntermedia = "{{1.pressing_user.guardia_intermedia}}".trim();
+
+
+
+        const parseDays = (str) => {
+
+          if (!str || str.includes("{{")) return [];
+
+          return str.split(",").map(d => d.trim()).filter(Boolean);
+
+        };
+
+
+
+        const morningDays = parseDays(strMatutina);
+
+        const eveningDays = parseDays(strVespertina);
+
+        const intermediateDays = parseDays(strIntermedia);
+
+
+
+        const shiftListContainer = document.getElementById("shiftListContainer");
+
+        let allShifts = [];
+
+
+
+        morningDays.forEach(day => allShifts.push({ day: Number(day), type: 'Matutina', category: 'morning' }));
+
+        eveningDays.forEach(day => allShifts.push({ day: Number(day), type: 'Vespertina', category: 'evening' }));
+
+        intermediateDays.forEach(day => allShifts.push({ day: Number(day), type: 'Intermedia (FDS)', category: 'intermediate' }));
+
+
+
+        allShifts.sort((a, b) => a.day - b.day);
+
+
+
+        if (allShifts.length === 0) {
+
+          shiftListContainer.innerHTML = `<div class="empty-state">No tienes guardias asignadas este mes.</div>`;
+
+        } else {
+
+          shiftListContainer.innerHTML = "";
+
+          allShifts.forEach(shift => {
+
+            const card = document.createElement("div");
+
+            card.className = `shift-card ${shift.category}`;
+
+            card.innerHTML = `
+
+              <div>
+
+                <span class="shift-date">Día ${shift.day}</span>
+
+              </div>
+
+              <span class="shift-badge-type">${shift.type}</span>
+
+            `;
+
+            shiftListContainer.appendChild(card);
+
+          });
+
+        }
+
+
+
+        const calendarEl = document.getElementById("calendar");
+
+        const now = new Date();
+
+        const currentMonthIndex = now.getMonth();
+
+        const currentYear = now.getFullYear();
+
+
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+
+          initialView: "dayGridMonth",
+
+          locale: "es",
+
+          headerToolbar: { 
+
+            left: "title", 
+
+            center: "", 
+
+            right: "" 
+
+          },
+
+          fixedWeekCount: false,
+
+          height: "100%",
+
+          dayCellDidMount: function (info) {
+
+            const frame = info.el.querySelector(".fc-daygrid-day-frame");
+
+            if (frame) {
+
+              const cellDate = info.date;
+
+              const cellMonth = cellDate.getMonth();
+
+              const cellYear = cellDate.getFullYear();
+
+              const dayNumStr = cellDate.getDate().toString();
+
+              const dayOfWeek = cellDate.getDay();
+
+
+
+              if (cellMonth !== currentMonthIndex || cellYear !== currentYear) return;
+
+
+
+              const container = document.createElement("div");
+
+              container.className = "split-day-container";
+
+
+
+              const dayPart = document.createElement("div");
+
+              dayPart.className = "half-triangle day-shift";
+
+
+
+              const nightPart = document.createElement("div");
+
+              nightPart.className = "half-triangle night-shift";
+
+
+
+              if (morningDays.includes(dayNumStr)) {
+
+                dayPart.classList.add("active-user");
+
+              }
+
+              if (eveningDays.includes(dayNumStr)) {
+
+                nightPart.classList.add("active-user");
+
+              }
+
+
+
+              container.appendChild(dayPart);
+
+              container.appendChild(nightPart);
+
+
+
+              
+
+              if ((dayOfWeek === 0 || dayOfWeek === 6) && intermediateDays.includes(dayNumStr)) {
+
+                const intermediateSquare = document.createElement("div");
+
+                intermediateSquare.className = "weekend-center-square";
+
+                intermediateSquare.textContent = "";
+
+                container.appendChild(intermediateSquare);
+
+              }
+
+
+
+              frame.insertBefore(container, frame.firstChild);
+
+            }
+
+          },
+
+        });
+
+
+
+        calendar.render();
+
+      });
+
+    </script>
+
+  </body>
+
+</html>
